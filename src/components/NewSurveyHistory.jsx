@@ -33,6 +33,16 @@ let openPhotoSwipe = function (items, index) {
     let gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, options);
     gallery.init();
 }
+
+function companyStartTime() {
+    const now = new Date();
+    let year = now.getFullYear();
+    let month = now.getMonth() + 1;
+    let formatYear = year.toString().substr(2, 2);
+    let formatMonth = month < 10 ? "0" + month : month;
+    return `${formatYear} 年 ${formatMonth} 月`;
+}
+
 export default class NewSurveyHistory extends React.Component {
     constructor(props) {
         super(props);
@@ -79,7 +89,7 @@ export default class NewSurveyHistory extends React.Component {
             company_name: "",
             company_address: "",
             company_url: "",
-            company_start_time: "",
+            company_start_time: companyStartTime(),
             company_referee_name: "",
             question: false,
             which: "-1",
@@ -435,7 +445,7 @@ export default class NewSurveyHistory extends React.Component {
                 ></TableHeadServey>
                 {/* <div className="delAnimate animatePageY"> */}
                 <button id="downloadPng" onClick={() => {
-                    this.loadingToast();
+                    // this.loadingToast();
                     this.addResearch();
                     for (let i = 0; i < interval.length; i++) {
                         clearInterval(interval[i]);

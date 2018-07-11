@@ -5,7 +5,8 @@ import axios from 'axios';
 import qs from 'qs';
 
 let Ajax = axios.create({
-    baseURL: 'https://www.huakewang.com/',      
+    baseURL: 'https://www.huakewang.com/',
+    // baseURL: 'https://121.199.47.107/',
     timeout: 4000,
     withCredentials: true,
     crossDomain: true,
