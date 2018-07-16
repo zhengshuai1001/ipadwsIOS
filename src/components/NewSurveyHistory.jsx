@@ -1,8 +1,10 @@
 import React from 'react';
 import { hashHistory, Link } from "react-router";
-import { Modal, ImagePicker, Toast, TextareaItem } from 'antd-mobile';
+import { Modal, ImagePicker, Toast, TextareaItem, Switch, DatePicker, List } from 'antd-mobile';
 import { div2png, readyDo, TableHeadServey, init, GetLocationParam } from './templates';
 import { DrawBoard } from './drawBoard';
+
+import update from 'immutability-helper';
 
 import PhotoSwipeItem from './photoSwipeElement.jsx';
 import '../js/photoswipe/photoswipe.css';
@@ -34,13 +36,22 @@ let openPhotoSwipe = function (items, index) {
     gallery.init();
 }
 
-function companyStartTime() {
-    const now = new Date();
+function companyStartTime(date) {
+    const now = date ? new Date(date) : new Date();
     let year = now.getFullYear();
     let month = now.getMonth() + 1;
     let formatYear = year.toString().substr(2, 2);
     let formatMonth = month < 10 ? "0" + month : month;
     return `${formatYear} 年 ${formatMonth} 月`;
+}
+function InterfaceCompanyStartTime(date) {
+    const now = date ? new Date(date) : new Date();
+    let year = now.getFullYear();
+    let month = now.getMonth() + 1;
+    let day = now.getDate();
+    let formatYear = year.toString().substr(2, 2);
+    let formatMonth = month < 10 ? "0" + month : month;
+    return `${year}-${formatMonth}-${day}`;
 }
 
 export default class NewSurveyHistory extends React.Component {
@@ -330,7 +341,8 @@ export default class NewSurveyHistory extends React.Component {
             mobile: this.state.phone,
             email: this.state.email,
             remark: this.state.remark,
-            is_in_survey: this.state.radio == "是"?1:0
+            is_in_survey: this.state.radio == "是"?1:0,
+            is_edit: false, //是否是输入框，可修改的，默认不是输入框
         }
         if (this.state.name == "") {
             Toast.info('请输入姓名', .8);
@@ -431,6 +443,89 @@ export default class NewSurveyHistory extends React.Component {
         })
         openPhotoSwipe(items, index);
     }
+    //0716 update
+    onChangePersonLink(index, key, event) {
+        let value;
+        if (key == "is_in_survey") {
+            console.log(event);
+            value = event;
+        } else {
+            value = event.target.value;
+        }
+        if (key == "mobile") {
+            this.setState({
+                hasError1: validate.CheckPhone(event.target.value).hasError,
+            })
+        }
+        if (key == "email") {
+            this.setState({
+                hasError2: validate.CheckEmail(event.target.value).hasError,
+            })
+        }
+        const personLink = update(this.state.personLink, { [index]: { [key]: { $set: value } } });
+        this.setState({ personLink });
+    }
+    addPersonalLink = () => {
+        let tmp = {
+            job_name: '',
+            name: '',
+            mobile: '',
+            email: '',
+            remark: '',
+            is_in_survey: 0,
+            is_edit: true,
+        }
+        const personLink = update(this.state.personLink, { $push: [tmp] });
+        this.setState({ personLink });
+    } 
+    savePerson = () => {
+        let { personLink: newPersonLink } = this.state;
+        let length = newPersonLink.length;
+        if (length < 1) {
+            Toast.info('请先新增联系人', .8);
+            return;
+        }
+        let lastNewPersonLink = newPersonLink[length -1];
+        //测试最后一行的数据是否合法
+        if ( !this.testStatePersonLink(lastNewPersonLink)) {
+            return;
+        }
+        newPersonLink.map((value, index, elem)=>{
+            elem[index].is_edit = false;
+        })
+        const personLink = update(this.state.personLink, { $set: newPersonLink });
+        this.setState({ personLink },()=>{
+            this.addResearch();
+        });
+    }
+    /**
+     *测试用户输入的联系人信息是否正确, 正则验证手机号和邮箱，必填项为姓名和手机号
+     *
+     * @author ZhengGuoQing
+     * @memberof NewSurveyHistory
+     */
+    testStatePersonLink(personLink) {
+        let { name, mobile } = personLink;
+        if (name == "") {
+            Toast.info('请输入姓名', .8);
+            return false;
+        } else if (mobile == "") {
+            Toast.info('请输入手机号', .8);
+            return false;
+        } else if (this.state.hasError1) {
+            Toast.info('请输入正确的手机号', .8);
+            return false;
+        } else if (this.state.hasError2) {
+            Toast.info('请输入正确的邮箱', .8);
+            return false;
+        } else {
+            return true;
+        }
+    }
+    onChangeCompanyStartTime(value) {
+        console.log(value)
+        this.setState({ company_start_time: companyStartTime(value) })
+    }
     render() {
         return (
             // <div id="fromHTMLtestdiv" className="visitRecordWrap" onTouchMove={()=>{this.touchBlur();}}>
@@ -444,13 +539,13 @@ export default class NewSurveyHistory extends React.Component {
                     </h3>}
                 ></TableHeadServey>
                 {/* <div className="delAnimate animatePageY"> */}
-                <button id="downloadPng" onClick={() => {
+                <div id="downloadPng" onClick={() => {
                     // this.loadingToast();
                     this.addResearch();
                     for (let i = 0; i < interval.length; i++) {
                         clearInterval(interval[i]);
                     }
-                }}>保存文件</button>
+                }}>保存文件</div>
                 <div style={{ overflow: "scroll" }}>
                     <div className="recordMain">
                         <h2 style={{ letterSpacing: "1px", marginTop: "0.8rem" }}>{this.state.company}</h2>
@@ -494,7 +589,7 @@ export default class NewSurveyHistory extends React.Component {
                                             readOnly
                                             value={this.state.meetingTime}
                                             onChange={(e) => { this.setState({ meetingTime: e.currentTarget.value }) }}
-                                        /></td>
+                                        /></td>  
                                 </tr>
                                 <Modal
                                     visible={this.state.modal4}
@@ -535,7 +630,7 @@ export default class NewSurveyHistory extends React.Component {
                                                     />
                                                 </li>
                                                 <li>
-                                                    <span>成立时间：</span>
+                                                    {/* <span>成立时间：</span>
                                                     <input
                                                         type="text"
                                                         value={this.state.company_start_time}
@@ -546,7 +641,16 @@ export default class NewSurveyHistory extends React.Component {
                                                         //     // document.querySelector(".am-modal-wrap").style.position="absolute"
                                                         // }}                                                     
                                                         onChange={(e) => { this.setState({ company_start_time: e.currentTarget.value }) }}
-                                                    />
+                                                    /> */}
+                                                    <DatePicker
+                                                        mode="month"
+                                                        title="公司成立时间"
+                                                        extra={this.state.company_start_time}
+                                                        value={this.state.datePicker}
+                                                        onChange={date => this.onChangeCompanyStartTime(date) }
+                                                    >
+                                                        <List.Item className="company-start-time-picker"><span>成立时间：</span></List.Item>
+                                                    </DatePicker>
                                                 </li>
                                                 <li>
                                                     <span>推荐人：</span>
@@ -586,7 +690,8 @@ export default class NewSurveyHistory extends React.Component {
                                 <tr>
                                     <td colSpan="4"
                                         className="darkbg newPersonalMsg"
-                                    >联系人<span onClick={this.showModal('modal1')}>新增 <i className="iconfont icon-jia"></i></span></td>
+                                    // >联系人<span onClick={this.showModal('modal1')}>新增 <i className="iconfont icon-jia"></i></span></td>
+                                    >联系人<span className="add-person-btn" onClick={this.savePerson}>保存</span><span className="add-person-span" onClick={this.addPersonalLink}>新增 <i className="iconfont icon-jia"></i></span></td>
                                 </tr>
                                 <Modal
                                     visible={this.state.modal1}
@@ -736,14 +841,14 @@ export default class NewSurveyHistory extends React.Component {
                                         <table className="personalMsg">
                                             <tr style={{ borderBottom: "1px solid #ccc" }}>
                                                 <td style={{ width: "10%" }}>姓名</td>
-                                                <td style={{ width: "10%" }}>职位</td>
-                                                <td style={{ width: "25%" }}>手机号</td>
-                                                <td style={{ width: "25%" }}>邮箱</td>
-                                                <td style={{ width: "20" }}>备注</td>
-                                                <td style={{ width: "10" }}>参与调研</td>
+                                                <td style={{ width: "15%" }}>职位</td>
+                                                <td style={{ width: "15%" }}>手机号</td>
+                                                <td style={{ width: "20%" }}>邮箱</td>
+                                                <td style={{ width: "25%" }}>备注</td>
+                                                <td style={{ width: "15%" }}>参与调研</td>
                                             </tr>
 
-                                            {
+                                            {/* {
                                                 this.state.personLink.map((value) => {
                                                     return <tr style={{ borderBottom: "1px solid #CBCBCB" }}>
                                                         <td>{value.name}</td>
@@ -753,6 +858,33 @@ export default class NewSurveyHistory extends React.Component {
                                                         <td>{value.remark}</td>
                                                         <td>{value.is_in_survey?"是":"否"}</td>
                                                     </tr>
+                                                })
+                                            } */}
+                                            {
+                                                this.state.personLink.map((value, index) => {
+                                                    return !value.is_edit ? 
+                                                        <tr style={{ borderBottom: "1px solid #CBCBCB" }}>
+                                                            <td>{value.name}</td>
+                                                            <td>{value.job_name}</td>
+                                                            <td>{value.mobile}</td>
+                                                            <td>{value.email}</td>
+                                                            <td>{value.remark}</td>
+                                                            <td>{value.is_in_survey ? "是" : "否"}</td>
+                                                        </tr> :
+                                                        <tr style={{ borderBottom: "1px solid #CBCBCB" }}>
+                                                            <td> <input className="person-link-input" type="text" value={value.name} onChange={this.onChangePersonLink.bind(this, index,'name')} ></input></td>
+                                                            <td> <input className="person-link-input" type="text" value={value.job_name} onChange={this.onChangePersonLink.bind(this, index,'job_name')} ></input></td>
+                                                            <td> <input className={this.state.hasError1 ? "txtRed person-link-input" : "person-link-input"} type="number" value={value.mobile} onChange={this.onChangePersonLink.bind(this, index,'mobile')} ></input></td>
+                                                            <td> <input className={this.state.hasError2 ? "txtRed person-link-input" : "person-link-input"} type="text" value={value.email} onChange={this.onChangePersonLink.bind(this, index,'email')} ></input></td>
+                                                            <td> <input className="person-link-input" type="text" value={value.remark} onChange={this.onChangePersonLink.bind(this, index,'remark')} ></input></td>
+                                                            {/* <td> <input type="text" value={} ></input> {value.is_in_survey ? "是" : "否"}</td> */}
+                                                            <td>
+                                                            <Switch
+                                                                checked={value.is_in_survey ? true : false}
+                                                                onChange={(change) => { this.onChangePersonLink(index, 'is_in_survey', change) }}
+                                                            />
+                                                            </td>
+                                                        </tr>
                                                 })
                                             }
 

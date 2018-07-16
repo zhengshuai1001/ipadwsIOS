@@ -495,7 +495,7 @@
             }
             table.sceneTable {
                 border-top: 0;
-                input[type=checkbox] {
+                input[type=checkbox]:not(.am-switch-checkbox) {
                     height: .46875rem;
                     width: .46875rem;
                     position: relative;
@@ -1156,7 +1156,7 @@
 }
 .newPersonalMsg {
     position: relative;
-    span {
+    span.add-person-span {
         position: absolute;
         right: .195313rem;
         font-size: 16px;
@@ -1228,6 +1228,8 @@
     right: 1.2rem;
     margin-top:0.05rem;
     z-index: 100;
+    border: 1px solid #bbb;
+    border-radius: 3px;
 }
 #mainWrap {
     // padding-top: 1.3rem;
@@ -1380,7 +1382,7 @@
         opacity: 1;
     }
 }
-
+@import './surveyHistory.less';
 
 
 
