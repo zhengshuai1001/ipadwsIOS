@@ -49,10 +49,11 @@ function InterfaceCompanyStartTime(date) {
     let year = now.getFullYear();
     let month = now.getMonth() + 1;
     let day = now.getDate();
-    let formatYear = year.toString().substr(2, 2);
     let formatMonth = month < 10 ? "0" + month : month;
-    return `${year}-${formatMonth}-${day}`;
+    let formatDay = day < 10 ? "0" + day : day;
+    return `${year}-${formatMonth}-${formatDay}`;
 }
+
 
 export default class NewSurveyHistory extends React.Component {
     constructor(props) {
@@ -100,7 +101,8 @@ export default class NewSurveyHistory extends React.Component {
             company_name: "",
             company_address: "",
             company_url: "",
-            company_start_time: companyStartTime(),
+            company_start_time: InterfaceCompanyStartTime(), 
+            company_start_time_text: companyStartTime(),
             company_referee_name: "",
             question: false,
             which: "-1",
@@ -145,6 +147,68 @@ export default class NewSurveyHistory extends React.Component {
                     Toast.info("文件保存失败", 2, null, false);
                 }
             }
+        this.handleProjectGet = (res) => {
+            if (res.success) {
+                //将获取的数据放到state里咯
+                let { company_info, user_list, linkers, plan_list, appendixs } = res.data;
+                let { company_name, start_time: company_start_time, address: company_address, url: company_url, referee_name: company_referee_name } = company_info;
+                // this.setState({
+                //     "gd_company_id": this.state.baseId, //公司id
+                //     "suggestion": this.state.suggest,
+                //     "type": 3,
+                //     "score": this.state.score,
+                //     "content": this.state.researchResult,
+                //     "file_Path": "",
+                //     "file_path_title": "",
+                //     "appendix": this.state.ids.join("_"),
+                //     "linkers": this.state.personLink,
+                //     "plans": this.state.orderList,
+                //     id,  //项目id
+                //     company_name,
+                //     company_address,
+                //     company_url,
+                //     company_start_time,
+                //     company_referee_name,
+                // })
+                // user_list.map((value, index, elem)=>{
+                //     elem[index].name = value.real_name;
+                //     elem[index].remark = "";
+                // })
+                plan_list.map((value, index, elem) => {
+                    elem[index].exp_time = InterfaceCompanyStartTime(value.exp_time);
+                })
+                this.setState({
+                    company_name,
+                    company_address,
+                    company_url,
+                    company_start_time,
+                    company_referee_name,
+                    company: company_name,
+                    meetingAddress: company_address,
+                    meetingTime: companyStartTime(company_start_time),
+                    companyAddress: company_url,
+                    company_start_time_text: companyStartTime(company_start_time),
+                    personLink: linkers,
+                    orderList: plan_list,
+                })
+                // console.log(res);
+                //初始化写入图片
+                this.writingWorksInfo(appendixs);
+            } else {
+                Toast.info("获取调研内容失败", 1, null, false);
+            }
+        }
+    }
+    ajaxGetSurveyInfo() {
+        if (!this.props.location.query || !this.props.location.query.id) {
+            return;
+        }
+        //调研详细
+        runPromise('get_survey_info', {
+            "gd_company_id": this.props.location.query.id
+        }, this.handleProjectGet, false, "post");
+        //初始化加载已经上传的图片
+
     }
 
     componentDidMount() {
@@ -165,6 +229,8 @@ export default class NewSurveyHistory extends React.Component {
         //     let delAnimate = document.querySelector("delAnimate");
         //     delAnimate.classList.remove('animatePageY');
         // }, 1000);
+        //判断URL有没有参数ID，需不需要获取调研记录
+        this.ajaxGetSurveyInfo();
     }
     routerWillLeave(nextLocation) {
         // let mainWrap = document.getElementById("mainWrap");
@@ -175,7 +241,7 @@ export default class NewSurveyHistory extends React.Component {
             clearInterval(interval[i]);
         }
     }
-    addResearch = () => {
+    addResearch = (flag = 2) => {
         runPromise('add_project_ex', {
             "gd_company_id": this.state.baseId, //公司id
             "suggestion": this.state.suggest,
@@ -192,7 +258,8 @@ export default class NewSurveyHistory extends React.Component {
             "company_address": this.state.company_address,
             "company_url": this.state.company_url,
             "company_start_time": this.state.company_start_time,
-            "company_referee_name": this.state.company_referee_name
+            "company_referee_name": this.state.company_referee_name,
+            flag,
         }, this.handleResearchAdd, true, "post");
     }
     handleDetailsGet = (res) => {
@@ -213,10 +280,11 @@ export default class NewSurveyHistory extends React.Component {
                 companyAddress: this.state.company_url,
                 company: this.state.company_name
             });
-            interval.push(setInterval(() => {
-                this.addResearch();
-            }, 30000));
+            // interval.push(setInterval(() => {
+            //     this.addResearch();
+            // }, 30000));
             this.onClose('modal4')();
+            this.addResearch();
         };
     }
     clearAll = () => {
@@ -401,10 +469,11 @@ export default class NewSurveyHistory extends React.Component {
     //     };
     // }
     onChange = (files, type, index) => {
-        if(files.length>0){
-            let img = new Image();
-            let item = {};
+        if(files.length < 1){
+            return;
         }
+        let img = new Image();
+        let item = {};
         img.src = files[files.length - 1].url;
         img.onload = function (argument) {
             item.w = this.width;
@@ -427,6 +496,63 @@ export default class NewSurveyHistory extends React.Component {
             });
         }
     };
+    onChange2 = (files, type, index) => {
+        let img, item;
+        if (files.length > 0) {
+            img = new Image();
+            item = {};
+        }
+        if (type == 'remove') {
+            size.splice(index, 1);
+
+            let ids = this.state.ids;
+            ids.splice(index, 1);
+            this.setState({
+                files,
+                ids,
+            });
+        } else {
+            img.src = files[files.length - 1].url;
+            img.onload = function (argument) {
+                item.w = this.width;
+                item.h = this.height;
+            }
+            size.push(item);
+            runPromise('upload_image_byw_upy2', {
+                "arr": files[files.length - 1].url
+            }, this.handleBackPicSrc, false, "post");
+            this.setState({
+                files,
+            });
+        }
+    }
+    //写入作品信息
+    writingWorksInfo = (appendixs) => {
+
+        let ids = [];
+        let files = [];
+        let remoteSize = []; //接口返回的图片宽高
+
+        appendixs.length > 0 &&
+            appendixs.map((value, index) => {
+                ids.push(value.id);
+
+                let oneFile = Object.create(null);
+                oneFile.url = value.path;
+                files.push(oneFile);
+
+                let oneRemoteSize = Object.create(null);
+                oneRemoteSize.w = value.width;
+                oneRemoteSize.h = value.height;
+                remoteSize.push(oneRemoteSize);
+            });
+        size = remoteSize;
+
+        this.setState({
+            ids,
+            files,
+        })
+    }
     loadingToast() {
         Toast.loading('保存中...', 0, () => {
             // alert(4)
@@ -523,8 +649,106 @@ export default class NewSurveyHistory extends React.Component {
         }
     }
     onChangeCompanyStartTime(value) {
-        console.log(value)
-        this.setState({ company_start_time: companyStartTime(value) })
+        this.setState({ 
+            company_start_time: InterfaceCompanyStartTime(value),
+            datePicker: value,
+            company_start_time_text: companyStartTime(value),
+        })
+    }
+    addOrderMsg2 = () => {
+        ++numPlus;
+        let tmp = {
+            seq: numPlus,
+            content: '',
+            name: '',
+            exp_time: '',
+            is_edit: true,
+        }
+        const orderList = update(this.state.orderList, { $push: [tmp] });
+        this.setState({ orderList });
+    }
+    onChangeOrderList = (index, key, event) => {
+        let value;
+        if (key == "exp_time") {
+            value = InterfaceCompanyStartTime(event);
+        } else {
+            value = event.target.value;
+        }
+        const orderList = update(this.state.orderList, { [index]: { [key]: { $set: value } } });
+        this.setState({ orderList });
+    }
+    modifyPlan(index) {
+        if (!this.state.orderList[index]) {
+            return;
+        }
+        const orderList = update(this.state.orderList, { [index]: { is_edit: { $set: true } } });
+        this.setState({ 
+            orderList,
+            which: index
+         });
+    }
+    deletePlan(index) {
+        if (!this.state.orderList[index]) {
+            return;
+        }
+        const orderList = update(this.state.orderList, { $splice: [[[index], 1]] });
+        this.setState({ orderList }, () => {
+            //删除不能向后端去保存，因为不知道数组内其他数据是否是合法的。
+            // this.addResearch();
+        });
+    }
+    saveOrderOne(index) {
+        if (!this.testStateOrderList(index)) {
+            return;
+        }
+        const orderList = update(this.state.orderList, { [index]: { is_edit: { $set: false } } } );
+        this.setState({ orderList }, () => {
+            this.addResearch();
+        });
+    }
+    saveOrderList = () => {
+        let { orderList: newOrderList } = this.state;
+        let length = newOrderList.length;
+        if (length < 1) {
+            Toast.info('请先新增计划', .8);
+            return;
+        }
+        let eq = 0;
+        for (let i = 0; i < newOrderList.length; i++) {
+            let testResult = this.testStateOrderList(i);
+            if (!testResult)
+                break;
+            eq++;
+        }
+        if (eq < length) {
+            return;
+        }
+        newOrderList.map((value, index, elem) => {
+            elem[index].is_edit = false;
+        })
+        const orderList = update(this.state.orderList, { $set: newOrderList });
+        this.setState({ orderList }, () => {
+            this.addResearch();
+        });
+    }
+    testStateOrderList(index) {
+        let order = this.state.orderList[index];
+        if (!order) {
+            return false;
+        }
+        if (!order.content.trim()) {
+            Toast.info('请填写事项', .8);
+            return false;
+        }
+        if (!order.name.trim()) {
+            Toast.info('请填写责任人', .8);
+            return false;
+        }
+        if (!order.exp_time.trim()) {
+            Toast.info('请选择完成时间', .8);
+            return false;
+        }
+        return true;
     }
     render() {
         return (
@@ -541,11 +765,14 @@ export default class NewSurveyHistory extends React.Component {
                 {/* <div className="delAnimate animatePageY"> */}
                 <div id="downloadPng" onClick={() => {
                     // this.loadingToast();
+                    this.addResearch(1);
+                    // for (let i = 0; i < interval.length; i++) {
+                    //     clearInterval(interval[i]);
+                    // }
+                }}>保存并发送</div>
+                <div id="downloadPng2" onClick={() => {
                     this.addResearch();
-                    for (let i = 0; i < interval.length; i++) {
-                        clearInterval(interval[i]);
-                    }
-                }}>保存文件</div>
+                }}>保存为草稿</div>
                 <div style={{ overflow: "scroll" }}>
                     <div className="recordMain">
                         <h2 style={{ letterSpacing: "1px", marginTop: "0.8rem" }}>{this.state.company}</h2>
@@ -562,7 +789,7 @@ export default class NewSurveyHistory extends React.Component {
                         <div className="tableDetails">
                             <table className="topTable">
                                 <tr>
-                                    <td colSpan="4" className="darkbg">客户信息</td>
+                                    <td colSpan="4" className="darkbg">客户信息<span className="add-person-btn keep-right" onClick={this.handleDetailsGet}>保存</span></td>
                                 </tr>
                                 <tr>
                                     <th className="darkbg">公司名称</th>
@@ -645,8 +872,9 @@ export default class NewSurveyHistory extends React.Component {
                                                     <DatePicker
                                                         mode="month"
                                                         title="公司成立时间"
-                                                        extra={this.state.company_start_time}
-                                                        value={this.state.datePicker}
+                                                        minDate={new Date("1990-01-01")}
+                                                        extra={this.state.company_start_time_text}
+                                                        // value={this.state.company_start_time}
                                                         onChange={date => this.onChangeCompanyStartTime(date) }
                                                     >
                                                         <List.Item className="company-start-time-picker"><span>成立时间：</span></List.Item>
@@ -892,7 +1120,7 @@ export default class NewSurveyHistory extends React.Component {
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td colSpan="4" className="darkbg">合同内容</td>
+                                    <td colSpan="4" className="darkbg">调研记录</td>
                                 </tr>
                                 <tr style={{ position: "relative" }}>
                                     <td colSpan="4">
@@ -963,7 +1191,7 @@ export default class NewSurveyHistory extends React.Component {
                                                 <img src="" id="upload4" style={{ width: "2rem", height: "2rem", float: "left", margin: "3px 5px" }} /> */}
                                                 <ImagePicker
                                                     files={this.state.files}
-                                                    onChange={this.onChange}
+                                                    onChange={this.onChange2}
                                                     multiple={true}
                                                     onImageClick={(index, fs) => this.onTouchImg(index)}
                                                     selectable={this.state.files.length < 10}
@@ -1008,16 +1236,28 @@ export default class NewSurveyHistory extends React.Component {
                                     </td>
                                 </tr>
                                 <tr>
+                                    {/* <td colSpan="4" className="darkbg newPersonalMsg">
+                                        下一步计划和行动
+                                        <span 
+                                            className="add-person-span" 
+                                            onClick={(e) => { 
+                                                this.showModal('modal2')(e); 
+                                                this.setState({ 
+                                                    which: "-1",
+                                                    things: "",
+                                                    duty: "",
+                                                    finishTime: ""
+                                                })
+                                            }}
+                                        >新增 <i className="iconfont icon-jia"></i></span>
+                                    </td> */}
                                     <td colSpan="4" className="darkbg newPersonalMsg">
-                                        下一步计划和行动<span onClick={(e) => { 
-                                            this.showModal('modal2')(e); 
-                                            this.setState({ 
-                                                which: "-1",
-                                                things: "",
-                                                duty: "",
-                                                finishTime: ""
-                                            })
-                                        }}>新增 <i className="iconfont icon-jia"></i></span>
+                                        下一步计划和行动
+                                        <span className="add-person-btn" onClick={this.saveOrderList}>保存</span>
+                                        <span
+                                            className="add-person-span"
+                                            onClick={this.addOrderMsg2}
+                                        >新增 <i className="iconfont icon-jia"></i></span>
                                     </td>
                                 </tr>
                                 <Modal
@@ -1106,7 +1346,7 @@ export default class NewSurveyHistory extends React.Component {
                                             </tr>
                                             {
                                                 this.state.orderList.map((value, idx) => {
-                                                    return <tr>
+                                                    return !value.is_edit ? <tr>
                                                         <td style={{ borderLeft: "0 none" }}>{idx + 1}</td>
                                                         {/* <td>{value.content}</td> */}
                                                         <td style={{ paddingLeft: "5px", textAlign: "left" }}>
@@ -1115,7 +1355,8 @@ export default class NewSurveyHistory extends React.Component {
                                                         <td>{value.name}</td>
                                                         <td>{value.exp_time}</td>
                                                         <td>
-                                                            <span onClick={(e) => { this.showModal('modal2')(e, 1, idx); this.setState({ which: idx, }) }}
+                                                            <span 
+                                                                // onClick={(e) => { this.showModal('modal2')(e, 1, idx); this.setState({ which: idx, }) }}
                                                                 style={{
                                                                     color: "#fff",
                                                                     padding: "2px 6px",
@@ -1123,8 +1364,10 @@ export default class NewSurveyHistory extends React.Component {
                                                                     borderRadius: "3px",
                                                                     fontSize: "14px"
                                                                 }}
+                                                                onClick={this.modifyPlan.bind(this, idx)}
                                                             >修改</span>&nbsp;/&nbsp;
-                                                            <span onClick={(e) => { this.delPlanLis(idx); }}
+                                                            <span 
+                                                                onClick={(e) => { this.delPlanLis(idx); }}
                                                                 style={{
                                                                     color: "#fff",
                                                                     padding: "2px 6px",
@@ -1134,7 +1377,91 @@ export default class NewSurveyHistory extends React.Component {
                                                                 }}
                                                             >删除</span>
                                                         </td>
-                                                    </tr>
+                                                    </tr> :
+                                                        <tr>
+                                                            <td style={{ borderLeft: "0 none" }}>{idx + 1}</td>
+                                                            {/* <td>{value.content}</td> */}
+                                                            <td>
+                                                                {/* <pre dangerouslySetInnerHTML={{ __html: value.content }}></pre> */}
+                                                                <textarea
+                                                                    id="planThing"
+                                                                    className="person-link-input person-link-textarea"
+                                                                    style={{
+                                                                        minHeight: "40px",
+                                                                        maxHeight: "200px",
+                                                                        // paddingTop: "14px",
+                                                                        // paddingBottom: "10px",
+                                                                        // border: "0 none",
+                                                                        resize: "none",
+                                                                        // backgroundColor: "#f5f5f5",
+                                                                        // float: "left"
+                                                                    }}
+                                                                    // onFocus={() => { document.querySelector(".am-modal-wrap").style.marginTop = "-150px"; }}
+                                                                    // onBlur={() => { document.querySelector(".am-modal-wrap").style.marginTop = "0"; }}
+                                                                    // onChange={(e) => {
+                                                                    //     this.setState({
+                                                                    //         things: e.currentTarget.value
+                                                                    //     })
+                                                                    // }}
+                                                                    // value={this.state.things}
+                                                                    value={value.content}
+                                                                    onChange={this.onChangeOrderList.bind(this, idx, 'content')}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <input
+                                                                    type="text"
+                                                                    className="person-link-input"
+                                                                    value={this.state.duty}
+                                                                    onChange={(e) => {
+                                                                        this.setState({
+                                                                            duty: e.currentTarget.value
+                                                                        });
+                                                                    }}
+                                                                    value={value.name} 
+                                                                    onChange={this.onChangeOrderList.bind(this, idx, 'name')}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <DatePicker
+                                                                    mode="date"
+                                                                    title="完成时间"
+                                                                    minDate={new Date()}
+                                                                    // extra={this.state.company_start_time_text}
+                                                                    // value={this.state.company_start_time}
+                                                                    extra={value.exp_time}
+                                                                    // onChange={date => console.log(date)}
+                                                                    onChange={date => this.onChangeOrderList(idx, 'exp_time', date)}
+                                                                >
+                                                                    {/* <List.Item className="company-start-time-picker"></List.Item> */}
+                                                                    <span className="finish-time-span">{value.exp_time ? value.exp_time : "点击选择时间" }</span>
+                                                                </DatePicker>
+                                                            </td>
+                                                            <td>
+                                                                <span 
+                                                                    // onClick={(e) => { this.showModal('modal2')(e, 1, idx); this.setState({ which: idx, }) }}
+                                                                    style={{
+                                                                        color: "#fff",
+                                                                        padding: "2px 6px",
+                                                                        background: "#108ee9",
+                                                                        borderRadius: "3px",
+                                                                        fontSize: "14px"
+                                                                    }}
+                                                                    onClick={this.saveOrderOne.bind(this, idx)}
+                                                                >保存</span>&nbsp;/&nbsp;
+                                                                <span 
+                                                                    // onClick={(e) => { this.delPlanLis(idx); }}
+                                                                    style={{
+                                                                        color: "#fff",
+                                                                        padding: "2px 6px",
+                                                                        background: "red",
+                                                                        borderRadius: "3px",
+                                                                        fontSize: "14px"
+                                                                    }}
+                                                                    onClick={this.deletePlan.bind(this, idx)}
+                                                                >删除</span>
+                                                            </td>
+                                                        </tr>
                                                 })
                                             }
                                         </table>

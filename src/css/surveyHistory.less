@@ -13,7 +13,10 @@
     font-weight: normal;
     border: 1px solid #aaa;
     border-radius: 3px;
-    padding: 0 10px;
+	padding: 0 10px;
+	&.keep-right{
+		right: 0.2rem;
+	}
 }
 .am-list-item{
 	&.company-start-time-picker{
@@ -35,5 +38,34 @@
 			}
 		}
 	}
+}
+.person-link-textarea{
+	min-height: 40px;
+    max-height: 200px;
+	resize: none;
+	width: 80%;
+	margin: 5px auto;
+	display: block;
+}
+.finish-time-span{
+	padding: 3px 10px;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+}
+#downloadPng2 {
+    display:inline-block;
+    padding: 0.1rem;
+    position: absolute;
+    right: 3rem;
+    margin-top:0.05rem;
+    z-index: 100;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+}
+.title-draft{
+	float: right;
+    font-weight: 500;
+    font-size: 14px;
+    color: red;
 }
 /********** newSurveyHistory update 0716 end *********/

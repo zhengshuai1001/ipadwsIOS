@@ -50,7 +50,8 @@ export default class survey extends React.Component{
                     <ul>
                         {
                             this.state.researchHistoryList.item_list.map((value)=>(
-                                <Link to={'/surveyHistory?id=' + value.gd_company_id}>
+                                <Link 
+                                    to={(value.flag != "1" ? '/newSurveyHistory?id=' : '/surveyHistory?id=') + value.gd_company_id}>
                                     <li style={{position:"relative"}}>
                                         {
                                             value.signed_file_path ? <i className="iconfont icon-biaoji2"
@@ -63,7 +64,7 @@ export default class survey extends React.Component{
                                                     top: "0"
                                                 }}></i>:""
                                         }
-                                        <h3>{value.company_name}</h3>
+                                        <h3>{value.company_name}{value.flag != "1" ? <span className="title-draft">草稿</span> : null }</h3>
                                         <p>文件编号：{value.document_id} <span></span>调研日期：{(value.add_time+'').split(" ")[0]} <span></span>调研人：{value.master_name}</p>
                                         <p className="redText"><i>综合意见：</i>{value.suggest}</p>
                                     </li>
