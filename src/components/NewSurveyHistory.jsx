@@ -111,6 +111,7 @@ export default class NewSurveyHistory extends React.Component {
             this.handleResearchAdd = (res) => {
                 console.log(res);
                 if (res.success) {
+                    Toast.info("成功", .8, null, false);
                     this.setState({
                         id: res.message.id
                     })
@@ -123,7 +124,8 @@ export default class NewSurveyHistory extends React.Component {
                 }
             },
             this.handleBackPicSrc = (res) => {
-                console.log(res);
+                // console.log(res);
+                Toast.hide();
                 let tmpArrIds = this.state.ids;
                 tmpArrIds.push(res.data.id);
                 this.setState({
@@ -150,7 +152,7 @@ export default class NewSurveyHistory extends React.Component {
         this.handleProjectGet = (res) => {
             if (res.success) {
                 //将获取的数据放到state里咯
-                let { company_info, user_list, linkers, plan_list, appendixs } = res.data;
+                let { company_info, user_list, linkers, plan_list, appendixs, content, score, suggestion } = res.data;
                 let { company_name, start_time: company_start_time, address: company_address, url: company_url, referee_name: company_referee_name } = company_info;
                 // this.setState({
                 //     "gd_company_id": this.state.baseId, //公司id
@@ -177,6 +179,9 @@ export default class NewSurveyHistory extends React.Component {
                 plan_list.map((value, index, elem) => {
                     elem[index].exp_time = InterfaceCompanyStartTime(value.exp_time);
                 })
+                let impress = [false, false, false, false];
+                let impressIndex = 3 - score >= 0 ? 3 - score : 0;
+                impress[impressIndex] = true;
                 this.setState({
                     company_name,
                     company_address,
@@ -190,6 +195,10 @@ export default class NewSurveyHistory extends React.Component {
                     company_start_time_text: companyStartTime(company_start_time),
                     personLink: linkers,
                     orderList: plan_list,
+                    researchResult: content,
+                    score: score,
+                    impress: impress,
+                    suggest: suggestion,
                 })
                 // console.log(res);
                 //初始化写入图片
@@ -242,6 +251,13 @@ export default class NewSurveyHistory extends React.Component {
         }
     }
     addResearch = (flag = 2) => {
+        //判断下一步计划和行动的完成时间是否输入
+        let { orderList } = this.state;
+        orderList.map((value, index, elem)=>{
+            if (!value.exp_time) {
+                elem[index].exp_time = InterfaceCompanyStartTime();
+            }
+        });
         runPromise('add_project_ex', {
             "gd_company_id": this.state.baseId, //公司id
             "suggestion": this.state.suggest,
@@ -252,7 +268,7 @@ export default class NewSurveyHistory extends React.Component {
             "file_path_title": "",
             "appendix": this.state.ids.join("_"),
             "linkers": this.state.personLink,
-            "plans": this.state.orderList,
+            "plans": orderList,
             "id": this.state.id,  //项目id
             "company_name": this.state.company_name,
             "company_address": this.state.company_address,
@@ -496,7 +512,7 @@ export default class NewSurveyHistory extends React.Component {
             });
         }
     };
-    onChange2 = (files, type, index) => {
+    onChange2 = (files, type, index) => {       
         let img, item;
         if (files.length > 0) {
             img = new Image();
@@ -512,6 +528,7 @@ export default class NewSurveyHistory extends React.Component {
                 ids,
             });
         } else {
+            Toast.loading("上传图片...", 6)
             img.src = files[files.length - 1].url;
             img.onload = function (argument) {
                 item.w = this.width;
@@ -656,7 +673,8 @@ export default class NewSurveyHistory extends React.Component {
         })
     }
     addOrderMsg2 = () => {
-        ++numPlus;
+        // ++numPlus;
+        let numPlus = this.state.orderList.length;
         let tmp = {
             seq: numPlus,
             content: '',
@@ -789,7 +807,7 @@ export default class NewSurveyHistory extends React.Component {
                         <div className="tableDetails">
                             <table className="topTable">
                                 <tr>
-                                    <td colSpan="4" className="darkbg">客户信息<span className="add-person-btn keep-right" onClick={this.handleDetailsGet}>保存</span></td>
+                                    <td colSpan="4" className="darkbg">客户信息<span className="add-person-btn" onClick={this.handleDetailsGet}>保存</span></td>
                                 </tr>
                                 <tr>
                                     <th className="darkbg">公司名称</th>
@@ -1120,7 +1138,7 @@ export default class NewSurveyHistory extends React.Component {
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td colSpan="4" className="darkbg">调研记录</td>
+                                    <td style={{ position: "relative" }} colSpan="4" className="darkbg">调研记录<span className="add-person-btn" onClick={this.handleDetailsGet}>保存</span></td>
                                 </tr>
                                 <tr style={{ position: "relative" }}>
                                     <td colSpan="4">
@@ -1155,6 +1173,7 @@ export default class NewSurveyHistory extends React.Component {
                                         </div>
                                         <div style={{ overflow: "hidden" }}>
                                             <textarea className="allBox textareaPub" id="allBox"
+                                                value={this.state.researchResult}
                                                 onChange={(e) => { this.setState({ researchResult: e.currentTarget.value }) }}
                                             ></textarea>
                                         </div>
@@ -1412,12 +1431,12 @@ export default class NewSurveyHistory extends React.Component {
                                                                 <input
                                                                     type="text"
                                                                     className="person-link-input"
-                                                                    value={this.state.duty}
-                                                                    onChange={(e) => {
-                                                                        this.setState({
-                                                                            duty: e.currentTarget.value
-                                                                        });
-                                                                    }}
+                                                                    // value={this.state.duty}
+                                                                    // onChange={(e) => {
+                                                                    //     this.setState({
+                                                                    //         duty: e.currentTarget.value
+                                                                    //     });
+                                                                    // }}
                                                                     value={value.name} 
                                                                     onChange={this.onChangeOrderList.bind(this, idx, 'name')}
                                                                 />
@@ -1518,6 +1537,7 @@ export default class NewSurveyHistory extends React.Component {
                                                     className="allBox textareaPub"
                                                     id="suggest"
                                                     style={{ float: "left", width: "80%", padding: "2px 10px" }}
+                                                    value={this.state.suggest}
                                                     onChange={(e) => { this.setState({ suggest: e.currentTarget.value }) }}
                                                 ></textarea>
                                             </div>

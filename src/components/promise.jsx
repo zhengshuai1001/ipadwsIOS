@@ -7,7 +7,7 @@ import qs from 'qs';
 let Ajax = axios.create({
     baseURL: 'https://www.huakewang.com/',
     // baseURL: 'https://121.199.47.107/',
-    timeout: 4000,
+    timeout: 6000,
     withCredentials: true,
     crossDomain: true,
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
@@ -48,6 +48,7 @@ const ajaxURLList = {
     get_staff_list: "gdApi/get_staff_list", //获取己方联系人
     get_survey_info: "gdApi/get_survey_info", //获取调研
     get_check_info: "gdApi/get_check_info", //获取验收详细
+    get_user_list: "gdApi/get_user_list", //获取所有人员信息列表
 }
 
 //定义一个基于Promise的异步任务执行器

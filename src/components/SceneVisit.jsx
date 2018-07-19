@@ -1,8 +1,20 @@
 import React from 'react';
 import { Modal, Toast } from 'antd-mobile';
-import { div2png, readyDo, TableHeads, init, GetLocationParam } from './templates';
+import { div2png, readyDo, TableHeads, init, GetLocationParam, NextStepAndAction } from './templates';
 import { DrawBoard } from './drawBoard';
 import { get } from 'https';
+
+import update from 'immutability-helper';
+
+function InterfaceCompanyStartTime(date) {
+    const now = date ? new Date(date) : new Date();
+    let year = now.getFullYear();
+    let month = now.getMonth() + 1;
+    let day = now.getDate();
+    let formatMonth = month < 10 ? "0" + month : month;
+    let formatDay = day < 10 ? "0" + day : day;
+    return `${year}-${formatMonth}-${formatDay}`;
+}
 
 let canvas;
 let drawBoard;
@@ -27,7 +39,7 @@ export default class SceneVisit extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            allChecked: true,
+            allChecked: false,
             silent: true,
             modal: true,            
             modal2: false,
@@ -37,14 +49,14 @@ export default class SceneVisit extends React.Component {
             things: "",
             duty: "",
             finishTime: "",
-            currentCompany:"",
+            currentCompany: decodeURIComponent(validate.getCookie('company_name')),
             orderList:[],
             checkArr1: [true, false, false],
             checkArr2: [true, false, false],
             checkArr3: [true, false, false],
             checkArr4: [true, false, false],
             checkArr5: [true, false, false],
-            firstMet:[true,false,false,false],
+            firstMet: [true,false,false,false],
             gd_company_id:"",
             title:"",
             user_ids:"",
@@ -70,11 +82,13 @@ export default class SceneVisit extends React.Component {
             toPersonalList:[],
             getPersonalList:[],
             name01:"",
-            name02:decodeURIComponent(validate.getCookie('user_name'))
+            name02:decodeURIComponent(validate.getCookie('user_name')),
+            recordId: '',
         },
         this.handleSceneVisitGet = (res) => {
-            console.log(res);
+            // console.log(res);
             if(res.success) {
+                Toast.info("成功", .8, null, false);
                 this.setState({
                     id:res.message.id
                 })
@@ -101,6 +115,63 @@ export default class SceneVisit extends React.Component {
             console.log(res)
             this.setState({getPersonalList:res.data})
         }
+        this.handleGetRecordInfo = (res) => {
+            if (res.success) {
+                //将获取的数据放到state里咯
+                let { id, company_name, title, content, plan_list, user_list, customer_list, survey_list, score: firstMet, suggest  } = res.data;
+                plan_list.map((value, index, elem) => {
+                    elem[index].exp_time = InterfaceCompanyStartTime(value.exp_time);
+                });
+
+                let name01 = [];
+                customer_list.map((value, index, elem) => {
+                    name01.push(value.name)
+                });
+                let name02 = [];
+                user_list.map((value, index, elem) => {
+                    name02.push(value.name)
+                });
+
+                survey_list.map((value, index, elem) => {
+                    let idx = 2 - value.score >= 0 ? 2 - value.score : 0;
+                    let key = "checkArr" + value.survey_menu_id;
+                    if (this.state[key]) {
+                        let arr = [false, false, false];
+                        arr[idx] = true;
+                        this.setState({
+                            [key]: arr
+                        })
+                    }
+                });
+
+                let newFirstMet = [false, false, false, false];
+                let firstMetIdx = 3 - firstMet >= 0 ? 3 - firstMet : 0; 
+                newFirstMet[firstMetIdx] = true;
+                this.setState({
+                    recordId: id,
+                    title,
+                    content,
+                    orderList: plan_list,
+                    currentCompany: company_name,
+                    name01: name01.join(","),
+                    name02: name02.join(","),
+                    firstMet: newFirstMet,
+                    suggest,
+                })
+
+            } else {
+                Toast.info("获取回访内容失败", 1, null, false);
+            }
+        }
+    }
+    ajaxGetRecordInfo() {
+        if (!this.props.location.query || !this.props.location.query.id) {
+            return;
+        }
+        //现场回访详细
+        runPromise('get_record_info', {
+            "record_id": this.props.location.query.id
+        }, this.handleGetRecordInfo, false, "post");
     }
     componentDidMount() {
         this.props.router.setRouteLeaveHook(
@@ -116,7 +187,7 @@ export default class SceneVisit extends React.Component {
         for (let s = 0; s < blurList.length; s++) {
             blurList[s].addEventListener('blur', () => {
                 interval.push(setInterval(() => {
-                    this.addRecordToback();
+                    // this.addRecordToback();
                 }, 30000));
             })
         }
@@ -126,6 +197,9 @@ export default class SceneVisit extends React.Component {
         let mainWrap = document.getElementById("mainWrap");
         head.style.position = "static";
         mainWrap.style.marginTop = '0';
+
+        //判断URL有没有参数ID，需不需要获取回放记录
+        this.ajaxGetRecordInfo();
     }
     routerWillLeave(nextLocation) {
         let head = document.getElementsByClassName("tableHead")[0];
@@ -149,7 +223,7 @@ export default class SceneVisit extends React.Component {
             // alert(4)
         }, true);
     }
-    addRecordToback=()=>{
+    addRecordToback = (flag = 2)=>{
         runPromise('add_record', {
             "gd_project_id": validate.getCookie('project_id'),
             "title": this.state.title,
@@ -160,7 +234,9 @@ export default class SceneVisit extends React.Component {
             "score": this.state.score,
             "plans": this.state.orderList,
             "surveys": this.state.surveys,
-            "company_name": this.state.currentCompany
+            "company_name": this.state.currentCompany,
+            flag,
+            id: this.state.recordId,
         }, this.handleSceneVisitGet, true, "post");
     }
     getPersonLis=()=>{
@@ -241,6 +317,7 @@ export default class SceneVisit extends React.Component {
         })
     }
     isCheck1 = (num, idx) => {
+        console.log(num, idx)
         let arr = [false, false, false];
         if (idx) {
             arr[idx] = !arr[idx];
@@ -421,6 +498,113 @@ export default class SceneVisit extends React.Component {
         });
         this.onClose('modal4')();   
     }
+    //更新，下一步计划和行动，0718 start
+    addResearch = (flag = 2) => {
+        //判断下一步计划和行动的完成时间是否输入
+        let { orderList } = this.state;
+        orderList.map((value, index, elem) => {
+            if (!value.exp_time) {
+                elem[index].exp_time = InterfaceCompanyStartTime();
+            }
+        });
+        this.addRecordToback(flag); //发送数据
+    }
+    addOrderMsg2 = () => {
+        // ++numPlus;
+        let numPlus = this.state.orderList.length;
+        let tmp = {
+            seq: numPlus,
+            content: '',
+            name: '',
+            exp_time: '',
+            is_edit: true,
+        }
+        const orderList = update(this.state.orderList, { $push: [tmp] });
+        this.setState({ orderList });
+    }
+    onChangeOrderList = (index, key, event) => {
+        let value;
+        if (key == "exp_time") {
+            value = InterfaceCompanyStartTime(event);
+        } else {
+            value = event.target.value;
+        }
+        const orderList = update(this.state.orderList, { [index]: { [key]: { $set: value } } });
+        this.setState({ orderList });
+    }
+    modifyPlan(index) {
+        if (!this.state.orderList[index]) {
+            return;
+        }
+        const orderList = update(this.state.orderList, { [index]: { is_edit: { $set: true } } });
+        this.setState({
+            orderList,
+            which: index
+        });
+    }
+    deletePlan(index) {
+        if (!this.state.orderList[index]) {
+            return;
+        }
+        const orderList = update(this.state.orderList, { $splice: [[[index], 1]] });
+        this.setState({ orderList }, () => {
+            //删除不能向后端去保存，因为不知道数组内其他数据是否是合法的。
+            // this.addResearch();
+        });
+    }
+    saveOrderOne(index) {
+        if (!this.testStateOrderList(index)) {
+            return;
+        }
+        const orderList = update(this.state.orderList, { [index]: { is_edit: { $set: false } } });
+        this.setState({ orderList }, () => {
+            this.addResearch();
+        });
+    }
+    saveOrderList = () => {
+        let { orderList: newOrderList } = this.state;
+        let length = newOrderList.length;
+        if (length < 1) {
+            Toast.info('请先新增计划', .8);
+            return;
+        }
+        let eq = 0;
+        for (let i = 0; i < newOrderList.length; i++) {
+            let testResult = this.testStateOrderList(i);
+            if (!testResult)
+                break;
+            eq++;
+        }
+        if (eq < length) {
+            return;
+        }
+        newOrderList.map((value, index, elem) => {
+            elem[index].is_edit = false;
+        })
+        const orderList = update(this.state.orderList, { $set: newOrderList });
+        this.setState({ orderList }, () => {
+            this.addResearch();
+        });
+    }
+    testStateOrderList(index) {
+        let order = this.state.orderList[index];
+        if (!order) {
+            return false;
+        }
+        if (!order.content.trim()) {
+            Toast.info('请填写事项', .8);
+            return false;
+        }
+        if (!order.name.trim()) {
+            Toast.info('请填写责任人', .8);
+            return false;
+        }
+        if (!order.exp_time.trim()) {
+            Toast.info('请选择完成时间', .8);
+            return false;
+        }
+        return true;
+    }
     render() {
         return (
             <div className="visitRecordWrap" id="fromHTMLtestdiv" onTouchMove={() => { this.touchBlur(); }}>
@@ -429,12 +613,18 @@ export default class SceneVisit extends React.Component {
                     isHide={true}
                 ></TableHeads>
                 <button id="downloadPng" onClick={() => {
-                    this.loadingToast();
+                    // this.loadingToast();
                     this.addRecordToback();
-                    for (let i = 0; i < interval.length; i++) {
-                        clearInterval(interval[i]);
-                    }
+                    // for (let i = 0; i < interval.length; i++) {
+                    //     clearInterval(interval[i]);
+                    // }
                 }}>下载图片</button>     
+                <div id="downloadPng3" onClick={() => {
+                    this.addResearch(1);
+                }}>保存并发送</div>
+                <div id="downloadPng4" onClick={() => {
+                    this.addResearch();
+                }}>保存为草稿</div>
                 <div className="recordMain">
                     <h2>现场回访记录</h2>
                     <div className="tableDetails">
@@ -443,7 +633,7 @@ export default class SceneVisit extends React.Component {
                                 <td className="darkbg">顾客单位</td>
                                 <td>
                                     <input type="text" className="qualityIpt" 
-                                        value={decodeURIComponent(validate.getCookie('company_name'))}
+                                        value={this.state.currentCompany} 
                                         onChange={(e, value) => {
                                             this.setState({
                                                 currentCompany: e.currentTarget.value
@@ -454,6 +644,7 @@ export default class SceneVisit extends React.Component {
                                 <td className="darkbg">回访主题</td>
                                 <td>
                                     <input type="text" className="qualityIpt"
+                                        value={this.state.title}
                                         onChange={(e, value) => {
                                             this.setState({
                                                 title: e.currentTarget.value
@@ -584,6 +775,7 @@ export default class SceneVisit extends React.Component {
                             <tr >
                                 <td colSpan="4">
                                     <textarea className="allBox" id="sceneResult" style={{ minHeight: "3rem" }}
+                                        value={this.state.content}
                                         onChange={(e, value) => {
                                             this.setState({
                                                 content: e.currentTarget.value
@@ -593,7 +785,7 @@ export default class SceneVisit extends React.Component {
                                 </td>
                             </tr>
                             <tr>
-                                <td colSpan="4" className="darkbg newPersonalMsg">
+                                {/* <td colSpan="4" className="darkbg newPersonalMsg">
                                     下一步计划和行动<span onClick={(e) => {
                                         this.showModal('modal2')(e);
                                         this.setState({
@@ -603,8 +795,25 @@ export default class SceneVisit extends React.Component {
                                             finishTime: ""
                                         })
                                     }}>新增 <i className="iconfont icon-jia"></i></span>
+                                </td> */}
+                                <td colSpan="4" className="darkbg newPersonalMsg">
+                                    下一步计划和行动
+                                        <span className="add-person-btn" onClick={this.saveOrderList}>保存</span>
+                                    <span
+                                        className="add-person-span"
+                                        onClick={this.addOrderMsg2}
+                                    >新增 <i className="iconfont icon-jia"></i></span>
                                 </td>
                             </tr>
+                            <NextStepAndAction
+                                orderList={this.state.orderList}
+                                modifyPlan={this.modifyPlan.bind(this)}
+                                saveOrderOne={this.saveOrderOne.bind(this)}
+                                deletePlan={this.deletePlan.bind(this)}
+                                onChangeOrderList={this.onChangeOrderList}
+                                state={this.state}
+                                setState={this.setState.bind(this)}
+                            />
                             <Modal
                                 visible={this.state.modal2}
                                 transparent
@@ -679,7 +888,7 @@ export default class SceneVisit extends React.Component {
                                     </div>
                                 </div>
                             </Modal>
-                            <tr>
+                            {/* <tr>
                                 <td colSpan="4">
                                     <table className="plan">
                                         <tr>
@@ -693,7 +902,6 @@ export default class SceneVisit extends React.Component {
                                             this.state.orderList.map((value, idx) => {
                                                 return <tr>
                                                     <td style={{ borderLeft: "0 none" }}>{idx + 1}</td>
-                                                    {/* <td>{value.content}</td> */}
                                                     <td style={{ paddingLeft: "5px", textAlign: "left" }}>
                                                         <pre dangerouslySetInnerHTML={{ __html: value.content }}></pre>
                                                     </td>
@@ -724,7 +932,7 @@ export default class SceneVisit extends React.Component {
                                         }
                                     </table>
                                 </td>
-                            </tr>
+                            </tr> */}
                             <tr>
                                 <td style={{
                                     textAlign: "center",
@@ -801,7 +1009,7 @@ export default class SceneVisit extends React.Component {
                                         </div>
                                         <div className="midDivTop">
                                             <span>您的宝贵建议: </span>&nbsp;&nbsp;
-                                            <textarea id="sceneNext" className="suggessMsg" onChange={(e)=>{this.setState({suggest:e.currentTarget.value})}}></textarea>
+                                            <textarea id="sceneNext" className="suggessMsg" value={this.state.suggest} onChange={(e)=>{this.setState({suggest:e.currentTarget.value})}}></textarea>
                                         </div>
                                     </div>
                                 </td>

@@ -1,8 +1,36 @@
 import React from 'react';
-import { Modal, Toast } from 'antd-mobile';
+import { Modal, Toast, DatePicker, Checkbox, Radio, List, SearchBar } from 'antd-mobile';
 import { hashHistory } from "react-router";
-import { div2png, readyDo, TableHeads, init, GetLocationParam } from './templates';
+import { div2png, readyDo, TableHeads, init, GetLocationParam, NextStepAndAction } from './templates';
 import { DrawBoard } from './drawBoard';
+
+import BScroll from 'better-scroll';
+import update from 'immutability-helper';
+
+function InterfaceCompanyStartTime(date) {
+    const now = date ? new Date(date) : new Date();
+    let year = now.getFullYear();
+    let month = now.getMonth() + 1;
+    let day = now.getDate();
+    let formatMonth = month < 10 ? "0" + month : month;
+    let formatDay = day < 10 ? "0" + day : day;
+    return `${year}-${formatMonth}-${formatDay}`;
+}
+
+function InterfaceCompanyStartTime2(date) {
+    const now = date ? new Date(date) : new Date();
+    let year = now.getFullYear();
+    let month = now.getMonth() + 1;
+    let day = now.getDate();
+    let hours = now.getHours();
+    let minutes = now.getMinutes();
+    let formatMonth = month < 10 ? "0" + month : month;
+    let formatDay = day < 10 ? "0" + day : day;
+    let formatHours = hours < 10 ? "0" + hours : hours;
+    let formatMinutes = minutes < 10 ? "0" + minutes : minutes;
+
+    return `${year}-${formatMonth}-${formatDay} ${formatHours}:${formatMinutes}:00`;
+}
 
 let canvas;
 let drawBoard;
@@ -28,11 +56,25 @@ export default class Meeting extends React.Component {
             finishTime:"",
             orderList:[],
             id:"",
-            which:"-1"
+            which:"-1",
+            userList: [], //获取所有人员信息列表
+            checkedUserList: [{id: 0}], //当前选择的人员信息列表
+            modalUserList: false, //显示人员信息列表的弹窗，是否显示
+            showModalUserList: "meetingAdmin", //选择的是哪项的人员列表，参加人员、记录人、主持人
+            // meetingAdminUserId: '',
+            // meetingWriteUserId: '',
+            // meetingPersonalUserId: '',
+            meetingAdminCheckedUserList: [],
+            meetingWriteCheckedUserList: [],
+            meetingPersonalCheckedUserList: [],
+            scroll: null, //滚动插件实例化对象
+			scroll_bottom_tips: "", //上拉加载的tips
+            total_count: 0, //人员总数量
         },
         this.handleMeetingAdd=(res)=>{
-            console.log(res);
+            // console.log(res);
             if(res.success){
+                Toast.info("成功", .8, null, false);
                 this.setState({
                     id: res.message.id
                 })
@@ -52,6 +94,68 @@ export default class Meeting extends React.Component {
                 Toast.info("文件保存失败", 2, null, false);
             }
         }
+        this.handleGetMeetingInfo = (res) => {
+            if (res.success) {
+                console.log(res)
+                let { id, start_time, address, master_name, recorder_name, user_list, title, content, plan_list  } = res.data;
+
+                let meetingPersonal = [];
+                user_list.map((value, index, elem) => {
+                    meetingPersonal.push(value.name)
+                });
+
+                plan_list.map((value, index, elem) => {
+                    elem[index].exp_time = InterfaceCompanyStartTime(value.exp_time);
+                });
+
+                this.setState({
+                    id, 
+                    meetingDate: start_time,
+                    meetingAddress: address,
+                    meetingAdmin: master_name,
+                    meetingWrite: recorder_name,
+                    meetingPersonal: meetingPersonal.join(","),
+                    meetingTitle: title,
+                    meetingResult: content,
+                    orderList: plan_list,
+                })
+            } else {
+                Toast.info("获取会议详情失败", 1, null, false);
+            }
+        }
+        this.handleGetUserList = (res, pullingUp) => {
+            if (res.success) {
+                // let userList = res.data.item_list;
+                // userList.map((value, index, elem) => {
+                //     elem[index].isChecked = false;
+                // })
+                let newItemList = this.state.userList;
+                if (pullingUp) {
+                    newItemList = [...newItemList, ...res.data.item_list];
+                } else {
+                    newItemList = res.data.item_list;
+                }
+                this.setState({
+                    userList: newItemList,
+                    total_count: res.data.total_count,
+                    scroll_bottom_tips: res.data.item_list.length == 10 ? "上拉加载更多" : ""
+                },() => {
+                    this.state.scroll.finishPullUp()
+                    this.state.scroll.refresh();
+                })
+            } else {
+                Toast.info("获取人员列表失败", 1, null, false);
+            }
+        }
+    }
+    ajaxGetMeetingInfo() {
+        if (!this.props.location.query || !this.props.location.query.id) {
+            return;
+        }
+        //现场回访详细
+        runPromise('get_meeting_info', {
+            "meeting_id": this.props.location.query.id
+        }, this.handleGetMeetingInfo, false, "post");
     }
     componentDidMount () {
         this.props.router.setRouteLeaveHook(
@@ -66,7 +170,7 @@ export default class Meeting extends React.Component {
         for (let s = 0; s < blurList.length; s++) {
             blurList[s].addEventListener('blur', () => {
                 interval.push(setInterval(() => {
-                    this.addMeeting();
+                    // this.addMeeting();
                 }, 30000));
             })
         }
@@ -74,6 +178,12 @@ export default class Meeting extends React.Component {
         let mainWrap = document.getElementById("mainWrap");
         head.style.position = "static";
         mainWrap.style.marginTop = '0';
+
+        //判断URL有没有参数ID，需不需要获取会议详细信息
+        this.ajaxGetMeetingInfo();
+
+        //先获取10个人员信息列表
+        this.ajaxGetUserList();
     }
     routerWillLeave(nextLocation) {
         let head = document.getElementsByClassName("tableHead")[0];
@@ -82,7 +192,7 @@ export default class Meeting extends React.Component {
             clearInterval(interval[i]);
         }
     }
-    addMeeting = () => {
+    addMeeting = (flag = 2) => {
         runPromise('add_meeting', {
             "gd_project_id": validate.getCookie("project_id"),
             "title": this.state.meetingTitle,
@@ -97,7 +207,8 @@ export default class Meeting extends React.Component {
             "recorder_id": this.state.meetingWrite,
             "start_time": this.state.meetingDate,
             "end_time": "",
-            "id":this.state.id
+            "id":this.state.id,
+            flag,
         }, this.handleMeetingAdd, false, "post");
     }
     clearAll = function () {
@@ -241,19 +352,276 @@ export default class Meeting extends React.Component {
             txtList[b].blur();
         }
     }
+
+    //更新，下一步计划和行动，0719 start
+    addResearch = (flag = 2) => {
+        //判断下一步计划和行动的完成时间是否输入
+        let { orderList } = this.state;
+        orderList.map((value, index, elem) => {
+            if (!value.exp_time) {
+                elem[index].exp_time = InterfaceCompanyStartTime();
+            }
+        });
+        this.addMeeting(flag); //发送数据
+    }
+    addOrderMsg2 = () => {
+        // ++numPlus;
+        let numPlus = this.state.orderList.length;
+        let tmp = {
+            seq: numPlus,
+            content: '',
+            name: '',
+            exp_time: '',
+            is_edit: true,
+        }
+        const orderList = update(this.state.orderList, { $push: [tmp] });
+        this.setState({ orderList });
+    }
+    onChangeOrderList = (index, key, event) => {
+        let value;
+        if (key == "exp_time") {
+            value = InterfaceCompanyStartTime(event);
+        } else {
+            value = event.target.value;
+        }
+        const orderList = update(this.state.orderList, { [index]: { [key]: { $set: value } } });
+        this.setState({ orderList });
+    }
+    modifyPlan(index) {
+        if (!this.state.orderList[index]) {
+            return;
+        }
+        const orderList = update(this.state.orderList, { [index]: { is_edit: { $set: true } } });
+        this.setState({
+            orderList,
+            which: index
+        });
+    }
+    deletePlan(index) {
+        if (!this.state.orderList[index]) {
+            return;
+        }
+        const orderList = update(this.state.orderList, { $splice: [[[index], 1]] });
+        this.setState({ orderList }, () => {
+            //删除不能向后端去保存，因为不知道数组内其他数据是否是合法的。
+            // this.addResearch();
+        });
+    }
+    saveOrderOne(index) {
+        if (!this.testStateOrderList(index)) {
+            return;
+        }
+        const orderList = update(this.state.orderList, { [index]: { is_edit: { $set: false } } });
+        this.setState({ orderList }, () => {
+            this.addResearch();
+        });
+    }
+    saveOrderList = () => {
+        let { orderList: newOrderList } = this.state;
+        let length = newOrderList.length;
+        if (length < 1) {
+            Toast.info('请先新增计划', .8);
+            return;
+        }
+        let eq = 0;
+        for (let i = 0; i < newOrderList.length; i++) {
+            let testResult = this.testStateOrderList(i);
+            if (!testResult)
+                break;
+            eq++;
+        }
+        if (eq < length) {
+            return;
+        }
+        newOrderList.map((value, index, elem) => {
+            elem[index].is_edit = false;
+        })
+        const orderList = update(this.state.orderList, { $set: newOrderList });
+        this.setState({ orderList }, () => {
+            this.addResearch();
+        });
+    }
+    testStateOrderList(index) {
+        let order = this.state.orderList[index];
+        if (!order) {
+            return false;
+        }
+        if (!order.content.trim()) {
+            Toast.info('请填写事项', .8);
+            return false;
+        }
+        if (!order.name.trim()) {
+            Toast.info('请填写责任人', .8);
+            return false;
+        }
+        if (!order.exp_time.trim()) {
+            Toast.info('请选择完成时间', .8);
+            return false;
+        }
+        return true;
+    }
+    ajaxGetUserList(offset = 0, limit = 10, pullingUp = false) {
+        let keycode = "";
+        //现场回访详细
+        runPromise('get_user_list', {
+            keycode,
+            offset,
+            limit,
+        }, this.handleGetUserList, false, "post", pullingUp);
+    }
+    ajaxNextPage = () => {
+        let hasNextPage = false;
+
+        let offset = this.state.userList.length;
+        if (offset < this.state.total_count) {
+            hasNextPage = true;
+        }
+        this.setState({
+            scroll_bottom_tips: hasNextPage ? "加载中..." : "加载完成"
+        })
+
+        if (hasNextPage) {
+            setTimeout(() => {
+                this.ajaxGetUserList(offset, 10, true)
+            }, 100);
+        }
+    }
+    /**
+     *点击选择人员时，弹出所有人员信息列表的弹窗
+     *
+     * @memberof Meeting
+     */
+    onClickUserList(name) {
+        this.setState({
+            modalUserList: true,
+            showModalUserList: name
+        },()=>{
+            // let searchBar = document.querySelector('.search-bar');
+            // let modalFooter = document.querySelector('.modal-user-list .am-modal-footer');
+            // const hei = document.documentElement.clientHeight - searchBar.offsetHeight - searchBar.offsetTop - modalFooter.offsetTop;
+            const hei = document.querySelector('.user-list .am-list-item').clientHeight;
+            const scroll = new BScroll(document.querySelector('.wrapper'), { click: true, pullUpLoad: { threshold: -40 }, bounceTime: 300, swipeBounceTime: 200 })
+            this.setState({
+                height: hei*10,
+                scroll,
+            })
+            scroll.on('pullingUp', () => {
+                this.ajaxNextPage();
+            });
+        })
+    }
+    //切换是否选择某个用户
+    changeCheckboxUser(value) {
+        // console.log(value);
+        let { checkedUserList, showModalUserList } = this.state;
+        // let { showModalUserList, userList } = this.state;
+
+        // let checkedUserList = this.state[showModalUserList +"CheckedUserList"];
+
+        // const newUserList = update(userList, { [index]: { isChecked: { $set: !userList[index].isChecked } } });
+        
+        if (showModalUserList == "meetingPersonal") {
+            let isDelete = false; //判断数组里是否已经有值了，该次点击是删除还是添加
+            checkedUserList.map((val, index, elem) => {
+                if (val.user_id == value.user_id) {
+                    elem.splice(index, 1);
+                    isDelete = true;
+                    return;
+                }
+                if (val.id == 0) {
+                    elem.splice(index, 1); //删除无用项
+                }
+            });
+            if (!isDelete) {
+                checkedUserList.push(value)
+            }
+            this.setState({
+                checkedUserList, 
+                // userList: newUserList 
+            });
+        } else {
+            let checkedUserList = [];
+            checkedUserList.push(value);
+            this.setState({
+                checkedUserList,
+            });
+        }
+    }
+    closeUserList = () => {
+        let { checkedUserList } = this.state;
+        this.setState({
+            checkedUserList: [{ id: 0 }]
+        })
+        this.onClose('modalUserList')(); //关闭弹窗
+    }
+    sureUserList = () => {
+        let { showModalUserList, checkedUserList } = this.state;
+        // let checkedUserId = [];
+        // let checkedName = [];
+        // checkedUserList.map((value, index, elem) => {
+        //     checkedUserId.push(value.user_id)
+        //     checkedName.push(value.name)
+        // })
+        // let key = `showModalUserList${UserId}`;
+
+        let key = `${showModalUserList}CheckedUserList`;
+        this.setState({
+            [key]: checkedUserList,
+            checkedUserList: [{ id: 0 }],
+        })
+
+        if (showModalUserList == "meetingPersonal") {
+            let checkedUserId = [];
+            let checkedName = [];
+            checkedUserList.map((value, index, elem) => {
+                checkedUserId.push(value.user_id)
+                checkedName.push(value.name)
+            })
+
+            this.setState({
+                [showModalUserList + "Txt"]: checkedName.join("，"),
+                [showModalUserList + "Id"]: checkedUserId.join("_"),
+            })
+        } else {
+            this.setState({
+                [showModalUserList + "Txt"]: checkedUserList[0].name,
+                [showModalUserList + "Id"]: checkedUserList[0].user_id,
+            })
+        }
+
+        // this.setState({
+        //     [showModalUserList]: checkedName,
+        //     [key]: checkedUserId,
+        //     checkedUserList: []
+        // })
+        this.onClose('modalUserList')(); //关闭弹窗
+    } 
+    onCancelSearch = () => {
+
+    }
+    onClearSearch = () => {
+
+    }
+    onSearch = () => {}
     render(){
         return (
             // <div className="visitRecordWrap" id="fromHTMLtestdiv" onTouchMove={() => { this.touchBlur(); }}>
             <div className="visitRecordWrap" id="fromHTMLtestdiv">
                 <TableHeads url={urls.wordMsg} isHide={true}></TableHeads>
                 <button id="downloadPng" onClick={() => {
-                    this.loadingToast();
+                    // this.loadingToast();
                     this.addMeeting();
-                    for (let i = 0; i < interval.length; i++) {
-                        clearInterval(interval[i]);
-                    }
+                    // for (let i = 0; i < interval.length; i++) {
+                    //     clearInterval(interval[i]);
+                    // }
                 }}
                 >下载图片</button>
+                <div id="downloadPng3" onClick={() => {
+                    this.addResearch(1);
+                }}>保存并发送</div>
+                <div id="downloadPng4" onClick={() => {
+                    this.addResearch();
+                }}>保存为草稿</div>
                 <div className="recordMain">
                     <h2>会议纪要</h2>
                     <div className="tableDetails">
@@ -261,12 +629,22 @@ export default class Meeting extends React.Component {
                             <tr>
                                 <th className="darkbg">会议日期</th>
                                 <td>
-                                    <input type="text" 
+                                    {/* <input type="text" 
                                         className="surveyIpt"
                                         placeholder="0000-00-00 00:00"
                                         value={this.state.meetingDate}
                                         onChange={(e)=>{this.setState({meetingDate:e.currentTarget.value})}}
-                                    />
+                                    /> */}
+                                    <DatePicker
+                                        mode="datetime"
+                                        title="会议日期"
+                                        minDate={new Date()}
+                                        extra={this.state.meetingDate}
+                                        // value={this.state.meetingDate}
+                                        onChange={date => this.setState({ meetingDate: InterfaceCompanyStartTime2(date)}) }
+                                    >
+                                        <span className="finish-time-span">{this.state.meetingDate ? this.state.meetingDate : "点击选择时间"}</span>
+                                    </DatePicker>
                                 </td>
                                 <th className="darkbg">会议地址</th>
                                 <td>
@@ -279,35 +657,55 @@ export default class Meeting extends React.Component {
                             </tr>
                             <tr>
                                 <th className="darkbg">主持人</th>
-                                <td>
-                                    <input type="text" 
+                                <td style={{"padding":" 0.1rem"}}>
+                                    {/* <input type="text" 
                                         className="surveyIpt"
                                         value={this.state.meetingAdmin}
                                         onChange={(e) => { this.setState({ meetingAdmin: e.currentTarget.value }) }}
-                                    />
+                                    /> */}
+                                    {this.state.meetingAdminTxt}
+                                    <i 
+                                        className="iconfont icon-jia add-more-btn-meet"
+                                        // onClick={(e) => {
+                                        //     this.state.toPersonalList.length > 0 ? this.showModal('modal4')(e) : Toast.info('暂无联系人', .8);
+                                        // }}
+                                        onClick={this.onClickUserList.bind(this, "meetingAdmin")}
+                                    ></i>
                                 </td>
                                 <th className="darkbg">记录人</th>
-                                <td>
-                                    <input type="text" className="surveyIpt"
+                                <td style={{ "padding": " 0.1rem" }}>
+                                    {/* <input type="text" className="surveyIpt"
                                         value={this.state.meetingWrite}
                                         onChange={(e) => { this.setState({ meetingWrite: e.currentTarget.value }) }}
-                                    />
+                                    /> */}
+                                    {this.state.meetingWriteTxt}
+                                    <i
+                                        className="iconfont icon-jia add-more-btn-meet"
+                                        onClick={this.onClickUserList.bind(this, "meetingWrite")}
+                                    ></i>
                                 </td>
                             </tr>
                         </table>
                         <table className="sceneTable">
                             <tr>
                                 <td className="darkbg">参加人员</td>
-                                <td colSpan="3">
-                                    <input type="text" className="surveyIpt" style={{padding:"0 5px"}}
+                                <td colSpan="3" style={{ "padding": " 0.1rem" }}>
+                                    {/* <input type="text" className="surveyIpt" style={{padding:"0 5px"}}
+                                        value={this.state.meetingPersonal}
                                         onChange={(e) => { this.setState({ meetingPersonal: e.currentTarget.value }) }}
-                                    />
+                                    /> */}
+                                    {this.state.meetingPersonalTxt}
+                                    <i
+                                        className="iconfont icon-jia add-more-btn-meet"
+                                        onClick={this.onClickUserList.bind(this, "meetingPersonal")}
+                                    ></i>
                                 </td>
                             </tr>
                             <tr>
                                 <td className="darkbg">会议主题</td>
                                 <td colSpan="3">
                                     <input type="text" className="surveyIpt" style={{padding:"0 5px"}}
+                                        value={this.state.meetingTitle}
                                         onChange={(e) => { this.setState({ meetingTitle: e.currentTarget.value }) }}                                        
                                     />
                                 </td>
@@ -318,12 +716,13 @@ export default class Meeting extends React.Component {
                             <tr >
                                 <td colSpan="4">
                                     <textarea className="allBox" id="meetingResult" style={{minHeight:"4rem"}}
+                                        value={this.state.meetingResult}
                                         onChange={(e) => { this.setState({ meetingResult: e.currentTarget.value }) }}                                            
                                     ></textarea>
                                 </td>
                             </tr>
                             <tr>
-                                <td colSpan="4" className="darkbg newPersonalMsg">
+                                {/* <td colSpan="4" className="darkbg newPersonalMsg">
                                     下一步计划和行动<span onClick={(e) => {
                                         this.showModal('modal2')(e);
                                         this.setState({
@@ -333,8 +732,25 @@ export default class Meeting extends React.Component {
                                             finishTime: ""
                                         })
                                     }}>新增 <i className="iconfont icon-jia"></i></span>
+                                </td> */}
+                                <td colSpan="4" className="darkbg newPersonalMsg">
+                                    下一步计划和行动
+                                        <span className="add-person-btn" onClick={this.saveOrderList}>保存</span>
+                                    <span
+                                        className="add-person-span"
+                                        onClick={this.addOrderMsg2}
+                                    >新增 <i className="iconfont icon-jia"></i></span>
                                 </td>
                             </tr>
+                            <NextStepAndAction
+                                orderList={this.state.orderList}
+                                modifyPlan={this.modifyPlan.bind(this)}
+                                saveOrderOne={this.saveOrderOne.bind(this)}
+                                deletePlan={this.deletePlan.bind(this)}
+                                onChangeOrderList={this.onChangeOrderList}
+                                state={this.state}
+                                setState={this.setState.bind(this)}
+                            />
                             <Modal
                                 visible={this.state.modal2}
                                 transparent
@@ -409,7 +825,7 @@ export default class Meeting extends React.Component {
                                     </div>
                                 </div>
                             </Modal>
-                            <tr>
+                            {/* <tr>
                                 <td colSpan="4">
                                     <table className="plan">
                                         <tr>
@@ -423,7 +839,6 @@ export default class Meeting extends React.Component {
                                             this.state.orderList.map((value, idx) => {
                                                 return <tr>
                                                     <td style={{ borderLeft: "0 none" }}>{idx + 1}</td>
-                                                    {/* <td>{value.content}</td> */}
                                                     <td style={{ paddingLeft: "5px", textAlign: "left" }}>
                                                         <pre dangerouslySetInnerHTML={{ __html: value.content }}></pre>
                                                     </td>
@@ -454,7 +869,7 @@ export default class Meeting extends React.Component {
                                         }
                                     </table>
                                 </td>
-                            </tr>
+                            </tr> */}
                             <tr>
                                 <td colSpan="4" className="signatureTxt">
                                     <div className="suggess">
@@ -476,6 +891,50 @@ export default class Meeting extends React.Component {
                                 </td>
                             </tr>
                         </table>
+                        <Modal
+                            visible={this.state.modalUserList}
+                            transparent
+                            maskClosable={false}
+                            onClose={this.onClose('modalUserList')}
+                            className="modal-user-list"
+                            style={{"width":"450px"}}
+                            footer={[
+                                { text: '取消', onPress: this.closeUserList },
+                                { text: '确定', onPress: this.sureUserList }
+                            ]}
+                        >
+                            <SearchBar
+                                className="search-bar"
+                                placeholder="请输入姓名或者手机号查询"
+                                maxLength={15}
+                                value={this.state.searchText}
+                                onChange={(val) => { this.setState({ searchText: val.trim() }) }}
+                                onCancel={this.onCancelSearch}
+                                onClear={this.onClearSearch}
+                                onSubmit={this.onSearch}
+                            />
+                            <div className="wrapper" style={{ overflow: "hidden", height: this.state.height }}>
+                                <List className="user-list">
+                                {
+                                    this.state.userList.length > 0 &&
+                                    this.state.userList.map((value, index) => {
+                                        return this.state.showModalUserList == "meetingPersonal" ? 
+                                        <Checkbox.CheckboxItem key={value.id} onChange={this.changeCheckboxUser.bind(this, value)}>
+                                            { value.name }
+                                            <span className="check-box-right-span">{ value.company_name }</span>
+                                        </Checkbox.CheckboxItem> : 
+                                            <Radio.RadioItem key={value.id} checked={value.id == this.state.checkedUserList[0].id} onChange={this.changeCheckboxUser.bind(this, value)}>
+                                                { value.name }
+                                                <span className="radio-right-span">{ value.company_name }</span>
+                                            </Radio.RadioItem>
+                                    })
+                                }
+                                <div className="scroll-bottom-tips">
+                                    { this.state.scroll_bottom_tips }
+                                </div>
+                                </List>
+                            </div>
+                        </Modal>
                     </div>
                 </div>
             </div>

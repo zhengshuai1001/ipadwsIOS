@@ -65,8 +65,9 @@ export default class VisitList extends React.Component {
                             <ul>
                                 {
                                     this.state.backVisit.item_list.map((value) => (
-                                        <Link to={'/sceneStatic?id='+value.id}>
+                                        <Link to={(value.flag != "1" ? '/scene?id=' : '/sceneStatic?id=')+value.id}>
                                             <li style={{position:"relative"}}>
+                                                {value.flag != "1" ? <span className="title-draft record">草稿</span> : null}
                                                 {
                                                     value.signed_file_path ? <i className="iconfont icon-biaoji2"
                                                         style={{

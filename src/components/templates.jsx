@@ -1,5 +1,5 @@
 import { Link, hashHistory } from "react-router";
-import { Toast } from 'antd-mobile';
+import { Toast, DatePicker } from 'antd-mobile';
 
 const urls = {
     wordMsg: require('../images/wordMsg.png'),
@@ -15,9 +15,11 @@ export const TableHead = (props) => (
 export const TableHeads = (props) => (    //公共头部  
     <div className="tableHead" style={{ paddingTop: '20px',position:"fixed",width:"100%",top:"0",left:"0"}}>
         <div className="leftLogoWord fn-left" onClick={() => {
-            hashHistory.push({
-                pathname: '/customs'
-            })}}><i className="iconfont icon-jiantou"></i>返回</div>
+            // hashHistory.push({
+            //     pathname: '/customs'
+            // })
+            hashHistory.goBack()
+            }}><i className="iconfont icon-jiantou"></i>返回</div>
         {
             props.isHide ? "" : props.tag
         }
@@ -369,7 +371,11 @@ export const Quality2 = (props) => {
         <li key={props.rowID} className="fullWidth" id={"visit?" + value.gd_company_id + "F"}>
             <div className="top">
                 <ul className="fn-left">
-                    <li><i></i></li>
+                    <li>
+                        {
+                            value.company_path_thumb ? <div className="visit-company-logo"><img className="logo-img" src={value.company_path_thumb}></img></div> : <i></i>
+                        }
+                    </li>
                     <li>{value.customer_name}</li>
                     <li style={{ color: "#ADADAD", margin: "0 5px" }}>{value.company_name}</li>
                     <li style={{ color: "#ADADAD" }}>{value.job_name}</li>
@@ -863,4 +869,127 @@ export const init = (textarea) => {
     resize();
 }
 
+//下一步计划和行动，复用组件
+export const NextStepAndAction = ({ orderList, modifyPlan, deletePlan, saveOrderOne, onChangeOrderList, state, setState }) => (
+    // <tr>
+    //     <td colSpan="4" className="darkbg newPersonalMsg">
+    //         下一步计划和行动
+    //         <span className="add-person-btn" onClick={props.saveOrderList}>保存</span>
+    //         <span
+    //             className="add-person-span"
+    //             onClick={props.addOrderMsg2}
+    //         >新增 <i className="iconfont icon-jia"></i></span>
+    //     </td>
+    // </tr>
+    <tr>
+        <td colSpan="4">
+            <table className="plan">
+                <tr>
+                    <td style={{ borderTop: "0 none", borderLeft: "0 none" }}>序号</td>
+                    <td style={{ borderTop: "0 none" }}>事项</td>
+                    <td style={{ borderTop: "0 none" }}>责任人</td>
+                    <td style={{ borderTop: "0 none" }}>完成时间</td>
+                    <td style={{ borderTop: "0 none", borderRight: "0 none" }}>操作</td>
+                </tr>
+                {
+                    orderList.map((value, idx) => {
+                        return !value.is_edit ? <tr>
+                            <td style={{ borderLeft: "0 none" }}>{idx + 1}</td>
+                            <td style={{ paddingLeft: "5px", textAlign: "left" }}>
+                                <pre dangerouslySetInnerHTML={{ __html: value.content }}></pre>
+                            </td>
+                            <td>{value.name}</td>
+                            <td>{value.exp_time}</td>
+                            <td>
+                                <span
+                                    style={{
+                                        color: "#fff",
+                                        padding: "2px 6px",
+                                        background: "#108ee9",
+                                        borderRadius: "3px",
+                                        fontSize: "14px"
+                                    }}
+                                    onClick={() => { modifyPlan(idx) }}
+                                >修改</span>&nbsp;/&nbsp;
+                                <span
+                                    onClick={() => { deletePlan(idx) }}
+                                    style={{
+                                        color: "#fff",
+                                        padding: "2px 6px",
+                                        background: "red",
+                                        borderRadius: "3px",
+                                        fontSize: "14px"
+                                    }}
+                                >删除</span>
+                            </td>
+                        </tr> :
+                            <tr>
+                                <td style={{ borderLeft: "0 none" }}>{idx + 1}</td>
+                                <td>
+                                    <textarea
+                                        id="planThing"
+                                        className="person-link-input person-link-textarea"
+                                        style={{
+                                            minHeight: "40px",
+                                            maxHeight: "200px",
+                                            resize: "none",
+                                        }}
+                                        value={value.content}
+                                        onChange={(e) => onChangeOrderList(idx, 'content', e) }
+                                    />
+                                </td>
+                                <td>
+                                    <input
+                                        type="text"
+                                        className="person-link-input"
+                                        // value={state.duty}
+                                        // onChange={(e) => {
+                                        //     setState({
+                                        //         duty: e.currentTarget.value
+                                        //     });
+                                        // }}
+                                        value={value.name}
+                                        onChange={(e) => onChangeOrderList(idx, 'name', e) }
+                                    />
+                                </td>
+                                <td>
+                                    <DatePicker
+                                        mode="date"
+                                        title="完成时间"
+                                        minDate={new Date()}
+                                        extra={value.exp_time}
+                                        onChange={date => onChangeOrderList(idx, 'exp_time', date)}
+                                    >
+                                        <span className="finish-time-span">{value.exp_time ? value.exp_time : "点击选择时间"}</span>
+                                    </DatePicker>
+                                </td>
+                                <td>
+                                    <span
+                                        style={{
+                                            color: "#fff",
+                                            padding: "2px 6px",
+                                            background: "#108ee9",
+                                            borderRadius: "3px",
+                                            fontSize: "14px"
+                                        }}
+                                        onClick={() => { saveOrderOne(idx) }}
+                                    >保存</span>&nbsp;/&nbsp;
+                                    <span
+                                        style={{
+                                            color: "#fff",
+                                            padding: "2px 6px",
+                                            background: "red",
+                                            borderRadius: "3px",
+                                            fontSize: "14px"
+                                        }}
+                                        onClick={() => { deletePlan(idx) }}
+                                    >删除</span>
+                                </td>
+                            </tr>
+                    })
+                }
+            </table>
+        </td>
+    </tr>
+)
 
