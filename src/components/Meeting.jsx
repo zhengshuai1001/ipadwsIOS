@@ -7,8 +7,15 @@ import { DrawBoard } from './drawBoard';
 import BScroll from 'better-scroll';
 import update from 'immutability-helper';
 
+function parseDate(date) {
+    if (typeof (date) == "string") {
+        date = date.replace(/\-/g, "/")
+    }
+    return new Date(date)
+}
+
 function InterfaceCompanyStartTime(date) {
-    const now = date ? new Date(date) : new Date();
+    const now = date ? parseDate(date) : new Date();
     let year = now.getFullYear();
     let month = now.getMonth() + 1;
     let day = now.getDate();
@@ -18,7 +25,7 @@ function InterfaceCompanyStartTime(date) {
 }
 
 function InterfaceCompanyStartTime2(date) {
-    const now = date ? new Date(date) : new Date();
+    const now = date ? parseDate(date) : new Date();
     let year = now.getFullYear();
     let month = now.getMonth() + 1;
     let day = now.getDate();

@@ -36,8 +36,17 @@ let openPhotoSwipe = function (items, index) {
     gallery.init();
 }
 
+function parseDate(date) {
+    // let parts = input.match(/(\d+)/g);
+    // return new Date(parts[0], parts[1] - 1, parts[2]);
+    if (typeof (date) == "string") {
+        date = date.replace(/\-/g, "/")
+    }
+    return new Date(date)
+}
+
 function companyStartTime(date) {
-    const now = date ? new Date(date) : new Date();
+    const now = date ? parseDate(date) : new Date();
     let year = now.getFullYear();
     let month = now.getMonth() + 1;
     let formatYear = year.toString().substr(2, 2);
@@ -45,7 +54,7 @@ function companyStartTime(date) {
     return `${formatYear} 年 ${formatMonth} 月`;
 }
 function InterfaceCompanyStartTime(date) {
-    const now = date ? new Date(date) : new Date();
+    const now = date ? parseDate(date) : new Date();
     let year = now.getFullYear();
     let month = now.getMonth() + 1;
     let day = now.getDate();
@@ -823,7 +832,10 @@ export default class NewSurveyHistory extends React.Component {
                                         <i onClick={this.showModal('modal4')}
                                             className="iconfont icon-jia"
                                             style={{
-                                                float: "right", fontSize: "28px", marginTop: "2px"
+                                                float: "right", 
+                                                fontSize: "28px", 
+                                                marginTop: "2px",
+                                                display: this.props.location.query && this.props.location.query.id ? "none" : "block"
                                             }}></i>
                                     </td>
                                     <th className="darkbg">成立时间</th>
@@ -890,7 +902,7 @@ export default class NewSurveyHistory extends React.Component {
                                                     <DatePicker
                                                         mode="month"
                                                         title="公司成立时间"
-                                                        minDate={new Date("1990-01-01")}
+                                                        minDate={parseDate("1990-01-01")}
                                                         extra={this.state.company_start_time_text}
                                                         // value={this.state.company_start_time}
                                                         onChange={date => this.onChangeCompanyStartTime(date) }

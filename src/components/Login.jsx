@@ -20,8 +20,10 @@ export default class Login extends React.Component {
             error: false,
             modal: false,
             animating: false,
-            value: '',
-            keywords: '',
+            // value: '',
+            // keywords: '',
+            value: '15267188707',
+            keywords: '06121427',
             code: "",
             codeNum: 2
         },
