@@ -633,7 +633,8 @@ export default class SceneVisit extends React.Component {
                                 <td className="darkbg">顾客单位</td>
                                 <td>
                                     <input type="text" className="qualityIpt" 
-                                        value={this.state.currentCompany} 
+                                        value={this.state.currentCompany}
+                                        readOnly
                                         onChange={(e, value) => {
                                             this.setState({
                                                 currentCompany: e.currentTarget.value

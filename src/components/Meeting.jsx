@@ -70,6 +70,7 @@ export default class Meeting extends React.Component {
             scroll: null, //滚动插件实例化对象
 			scroll_bottom_tips: "", //上拉加载的tips
             total_count: 0, //人员总数量
+            searchText: '', //输入的搜索关键字
         },
         this.handleMeetingAdd=(res)=>{
             // console.log(res);
@@ -97,11 +98,15 @@ export default class Meeting extends React.Component {
         this.handleGetMeetingInfo = (res) => {
             if (res.success) {
                 console.log(res)
-                let { id, start_time, address, master_name, recorder_name, user_list, title, content, plan_list  } = res.data;
+                let { id, start_time, address, user_list, title, content, plan_list, master_name, master_id, recorder_name, recorder_id } = res.data;
 
                 let meetingPersonal = [];
+                let meetingPersonalId = [];
+                let meetingPersonalTxt = [];
                 user_list.map((value, index, elem) => {
-                    meetingPersonal.push(value.name)
+                    meetingPersonal.push(value.name);
+                    meetingPersonalId.push(value.user_id);
+                    meetingPersonalTxt.push(value.name);
                 });
 
                 plan_list.map((value, index, elem) => {
@@ -118,6 +123,12 @@ export default class Meeting extends React.Component {
                     meetingTitle: title,
                     meetingResult: content,
                     orderList: plan_list,
+                    meetingAdminTxt: master_name,
+                    meetingAdminId: master_id,
+                    meetingWriteId: recorder_id,
+                    meetingWriteTxt: recorder_name,
+                    meetingPersonalId: meetingPersonalId.join("_"),
+                    meetingPersonalTxt: meetingPersonalTxt.join("，"),
                 })
             } else {
                 Toast.info("获取会议详情失败", 1, null, false);
@@ -140,8 +151,10 @@ export default class Meeting extends React.Component {
                     total_count: res.data.total_count,
                     scroll_bottom_tips: res.data.item_list.length == 10 ? "上拉加载更多" : ""
                 },() => {
-                    this.state.scroll.finishPullUp()
-                    this.state.scroll.refresh();
+                    if (this.state.scroll) {
+                        this.state.scroll.finishPullUp()
+                        this.state.scroll.refresh();
+                    }
                 })
             } else {
                 Toast.info("获取人员列表失败", 1, null, false);
@@ -196,15 +209,18 @@ export default class Meeting extends React.Component {
         runPromise('add_meeting', {
             "gd_project_id": validate.getCookie("project_id"),
             "title": this.state.meetingTitle,
-            "user_ids": this.state.meetingPersonal,
+            // "user_ids": this.state.meetingPersonal,
+            "user_ids": this.state.meetingPersonalId,
             "copy_to_ids": "",
             "content": this.state.meetingResult,
             "suggest": "",
             "score": "",
             "plans": this.state.orderList,
             "address": this.state.meetingAddress,
-            "master_id": this.state.meetingAdmin,
-            "recorder_id": this.state.meetingWrite,
+            // "master_id": this.state.meetingAdmin,
+            // "recorder_id": this.state.meetingWrite,
+            "master_id": this.state.meetingAdminId,
+            "recorder_id": this.state.meetingWriteId,
             "start_time": this.state.meetingDate,
             "end_time": "",
             "id":this.state.id,
@@ -461,7 +477,7 @@ export default class Meeting extends React.Component {
         return true;
     }
     ajaxGetUserList(offset = 0, limit = 10, pullingUp = false) {
-        let keycode = "";
+        let { searchText: keycode } = this.state;
         //现场回访详细
         runPromise('get_user_list', {
             keycode,
@@ -597,12 +613,32 @@ export default class Meeting extends React.Component {
         this.onClose('modalUserList')(); //关闭弹窗
     } 
     onCancelSearch = () => {
-
+        console.log("onCancel")
+        this.setState({
+            searchText: '',
+        },()=>{
+            this.onSearch();
+        })
     }
     onClearSearch = () => {
-
+        console.log("onClear")
+        this.setState({
+            searchText: '',
+        }, () => {
+            this.onSearch();
+        })
     }
-    onSearch = () => {}
+    onSearch = () => {
+        console.log("onSearch")
+        this.ajaxGetUserList();
+    }
+    onChangeSearch(val) {
+        this.setState({ 
+            searchText: val.trim(), 
+        },()=>{
+            val.trim().length == 0 ? this.onSearch() : null   
+        })
+    }
     render(){
         return (
             // <div className="visitRecordWrap" id="fromHTMLtestdiv" onTouchMove={() => { this.touchBlur(); }}>
@@ -905,10 +941,10 @@ export default class Meeting extends React.Component {
                         >
                             <SearchBar
                                 className="search-bar"
-                                placeholder="请输入姓名或者手机号查询"
+                                placeholder="请输入姓名或手机号查询"
                                 maxLength={15}
                                 value={this.state.searchText}
-                                onChange={(val) => { this.setState({ searchText: val.trim() }) }}
+                                onChange={(val) => { this.onChangeSearch(val) }}
                                 onCancel={this.onCancelSearch}
                                 onClear={this.onClearSearch}
                                 onSubmit={this.onSearch}

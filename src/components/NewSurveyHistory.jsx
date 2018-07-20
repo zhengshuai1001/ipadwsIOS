@@ -590,8 +590,8 @@ export default class NewSurveyHistory extends React.Component {
     onChangePersonLink(index, key, event) {
         let value;
         if (key == "is_in_survey") {
-            console.log(event);
-            value = event;
+            // console.log(event);
+            value = event ? 1 : 0 ;
         } else {
             value = event.target.value;
         }
@@ -1115,7 +1115,7 @@ export default class NewSurveyHistory extends React.Component {
                                                             <td>{value.mobile}</td>
                                                             <td>{value.email}</td>
                                                             <td>{value.remark}</td>
-                                                            <td>{value.is_in_survey ? "是" : "否"}</td>
+                                                            <td>{value.is_in_survey == 1 ? "是" : "否"}</td>
                                                         </tr> :
                                                         <tr style={{ borderBottom: "1px solid #CBCBCB" }}>
                                                             <td> <input className="person-link-input" type="text" value={value.name} onChange={this.onChangePersonLink.bind(this, index,'name')} ></input></td>
@@ -1126,7 +1126,7 @@ export default class NewSurveyHistory extends React.Component {
                                                             {/* <td> <input type="text" value={} ></input> {value.is_in_survey ? "是" : "否"}</td> */}
                                                             <td>
                                                             <Switch
-                                                                checked={value.is_in_survey ? true : false}
+                                                                checked={value.is_in_survey == 1 ? true : false}
                                                                 onChange={(change) => { this.onChangePersonLink(index, 'is_in_survey', change) }}
                                                             />
                                                             </td>
