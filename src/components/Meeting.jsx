@@ -420,7 +420,7 @@ export default class Meeting extends React.Component {
             which: index
         });
     }
-    deletePlan(index) {
+    realDeletePlan(index) {
         if (!this.state.orderList[index]) {
             return;
         }
@@ -429,6 +429,12 @@ export default class Meeting extends React.Component {
             //删除不能向后端去保存，因为不知道数组内其他数据是否是合法的。
             // this.addResearch();
         });
+    }
+    deletePlan(index) {
+        Modal.alert('删除', '确定删除该计划吗?', [
+            { text: '取消', onPress: () => { }, style: 'default' },
+            { text: '确定', onPress: () => this.realDeletePlan(index) },
+        ]);
     }
     saveOrderOne(index) {
         if (!this.testStateOrderList(index)) {
