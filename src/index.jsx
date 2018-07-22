@@ -20,6 +20,7 @@ import Company from './components/Company';
 import SurveyHistory from './components/SurveyHistory';
 import Mycustom from './components/Mycustom';
 import NewSurveyHistory from './components/NewSurveyHistory';
+import NewSurveyHistory2 from './components/NewSurveyHistory2';
 import MeetingList from './components/MeetingList';
 import QualityList from './components/QualityList';
 import SurveyHistoryStatic from './components/SurveyHistoryStatic';
@@ -62,7 +63,7 @@ ReactDOM.render(
             <Route path="/sceneStatic" component={SceneVisitStatic} />
             <Route path="/qualityStatic" component={QualityStatic} />
             <Route path="/surveyHistory" component={SurveyHistory} />
-            <Route path="/newSurveyHistory" component={NewSurveyHistory} />
+            <Route path="/newSurveyHistory" component={NewSurveyHistory2} />
             <Route path="/Test" component={Test} />
         </Router>
     </Router>
