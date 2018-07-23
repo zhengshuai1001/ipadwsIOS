@@ -20,10 +20,10 @@ export default class Login extends React.Component {
             error: false,
             modal: false,
             animating: false,
-            // value: '',
-            // keywords: '',
-            value: '15267188707',
-            keywords: '06121427',
+            value: '',
+            keywords: '',
+            // value: '15267188707',
+            // keywords: '06121427',
             code: "",
             codeNum: 2
         },
@@ -32,6 +32,7 @@ export default class Login extends React.Component {
             if(res.success) {
                 validate.setCookie('user_id', res.data.id);
                 validate.setCookie('user_name', res.data.real_name);
+                localStorage.setItem('en_user_id', res.data.en_user_id);
                 let to = GetLocationParam('to');
                 let tab = GetLocationParam('tab');
                 hashHistory.push({

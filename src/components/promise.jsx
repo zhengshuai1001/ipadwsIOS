@@ -88,18 +88,30 @@ function run(taskDef) {
  */
 export default function runPromise(ajaxName, param, handle, mustLogin = false, method="post", handleParam) {
     let cookie_user_id = getCookie('user_id');
-    if (mustLogin && !cookie_user_id) {
-        //如果没登录，跳转到登录页
-        hashHistory.push({
-            pathname: '/login',
-            query: { form: 'promise' },
-        });
-        return;
-    }
+    // if (mustLogin && !cookie_user_id) {
+    //     //如果没登录，跳转到登录页
+    //     hashHistory.push({
+    //         pathname: '/login',
+    //         query: { form: 'promise' },
+    //     });
+    //     return;
+    // }
 
+    let serializeParam = { "user_id": cookie_user_id };
+    let en_user_id = localStorage.getItem("en_user_id");
+    if (en_user_id && en_user_id != "undefined") {
+        serializeParam = { "user_id": cookie_user_id, en_user_id };
+    }
+    // let serializeParam = {};
+    if (method == "post") {
+        Object.assign(serializeParam, param);
+        
+    } else {
+        serializeParam = param;
+    }
     run(function* () {
         // let contents = yield ajaxName(param);
-        let contents = yield sendAjax(ajaxURLList[ajaxName], param, method);
+        let contents = yield sendAjax(ajaxURLList[ajaxName], serializeParam, method);
         handle(contents.data, handleParam);
     })
 }

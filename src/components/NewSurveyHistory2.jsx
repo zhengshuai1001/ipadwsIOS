@@ -1,6 +1,6 @@
 import React from 'react';
 import { hashHistory, Link } from "react-router";
-import { Modal, ImagePicker, Toast, TextareaItem, Switch, DatePicker, List } from 'antd-mobile';
+import { Modal, ImagePicker, Toast, TextareaItem, Switch, DatePicker, List, ActivityIndicator } from 'antd-mobile';
 import { div2png, readyDo, TableHeadServey, init, GetLocationParam } from './templates';
 import { DrawBoard } from './drawBoard';
 
@@ -115,10 +115,11 @@ export default class NewSurveyHistory extends React.Component {
             company_referee_name: "",
             question: false,
             which: "-1",
-            radio1:[true,false]
+            radio1:[true,false],
+            isUploadIng: false, //图片是否在上传中，这个状态用于显示加载中的弹窗
         },
             this.handleResearchAdd = (res) => {
-                console.log(res);
+                // console.log(res);
                 if (res.success) {
                     Toast.info("成功", .8, null, false);
                     this.setState({
@@ -798,6 +799,13 @@ export default class NewSurveyHistory extends React.Component {
      * @memberof NewSurveyHistory
      */
     positionUploadBtn() {
+        //其实不需要定义一个按钮，然后监听他的点击事件，ImagePicker有自定义选择图片的方法,因此这个方法没用了
+        //此方法已弃用
+        return;
+
+        // if (!window.api) {
+        //     return;
+        // }
         let inputHook = document.querySelector(".new-image-picker .am-image-picker-upload-btn");
         let uploadInput = document.querySelector(".choose-upload-file-btn");
         // if (!inputHook) {
@@ -814,11 +822,119 @@ export default class NewSurveyHistory extends React.Component {
         //     uploadInput.style.width = widthHook + "px";
         //     uploadInput.style.height = heightHook + "px";
         // } 
-        if (inputHook) {
+        if (inputHook && uploadInput) {
             inputHook.querySelector("input").style.display = "none";
-            inputHook.appendChild(uploadInput);
-            uploadInput.style.display = "block";
+            // let childs = inputHook.childNodes; 
+            // childs.forEach((node)=>{
+            //     inputHook.removeChild(node); 
+            // })
+            let newUploadInput = uploadInput.cloneNode(true);
+            newUploadInput.style.display = "block";
+            inputHook.appendChild(newUploadInput);
         }
+    }
+    touchStartUploadBtn = (e) => {
+        e.target.style.backgroundColor = "#bbb";
+    }
+    touchEndUploadBtn = (e) => {
+        e.target.style.backgroundColor = "transparent";
+    }
+    onClickUploadBtn = (e) => {
+        e.preventDefault();
+        this.apiGetPicture();
+    }
+    apiGetPicture() {
+        if (!window.api) {
+            return;
+        }
+        window.api.getPicture({
+            preview: true
+        }, (ret, err) => {
+            if (ret) {
+                this.uploadImages(ret.data);
+            } else {
+                // alert(JSON.stringify(err));
+            }
+        });
+    }
+    uploadImages = (path) => {
+        if (!window.api) {
+            return;
+        }
+        window.api.ajax({
+            url: 'https://www.huakewang.com/upload/upload_images_for_mobile',
+            method: 'POST',
+            dataType: 'JSON',
+            report: true,
+            data: {
+                values: {
+                    'alt': ''
+                },
+                files: {
+                    Filedata: path
+                }
+            }
+        }, (ret, err) => {
+            if (ret.status == "0") {
+                //上传中
+                // alert(JSON.stringify(ret.progress));
+                if (ret.progress > 0 && ret.progress < 100) {
+                    this.setState({
+                        isUploadIng: true
+                    })
+                }
+
+            }
+            if (ret.status == "1") {
+                //上传完成
+                // alert(JSON.stringify(ret.body));
+                if (ret.body.success) {
+                    let { id, file_path } = ret.body.data;
+                    this.pushWorksInfo(id, file_path);
+                }
+                this.setState({
+                    isUploadIng: false
+                })
+            }
+            if (ret.status == "2") {
+                //上传失败
+                // alert(JSON.stringify(ret));
+                this.setState({
+                    isUploadIng: false
+                })
+            }
+            if (err) {
+                //错误
+                // alert(JSON.stringify(err));
+                this.setState({
+                    isUploadIng: false
+                })
+            }
+        })
+    }
+    //添加作品信息，图片上传后，写入react的状态中
+    pushWorksInfo = (id, file_path) => {
+        let { ids, files } = this.state;
+
+        ids.push(id);
+        let oneFile = Object.create(null);
+        oneFile.url = file_path;
+        files.push(oneFile);
+
+        let item = Object.create(null);
+
+        let img = new Image();
+        img.src = file_path;
+        img.onload = function () {
+            item.w = this.width;
+            item.h = this.height;
+        }
+        size.push(item);
+
+        this.setState({
+            ids,
+            files,
+        })
     }
     render() {
         return (
@@ -843,7 +959,17 @@ export default class NewSurveyHistory extends React.Component {
                 <div id="downloadPng2" onClick={() => {
                     this.addResearch();
                 }}>保存为草稿</div>
-                <div className="choose-upload-file-btn"></div>
+                <div 
+                    className="choose-upload-file-btn"
+                    onTouchStart={this.touchStartUploadBtn}
+                    onTouchEnd={this.touchEndUploadBtn}
+                    onClick={this.onClickUploadBtn}
+                ></div>
+                <ActivityIndicator
+                    toast
+                    text="上传图片中..."
+                    animating={this.state.isUploadIng}
+                />
                 <div style={{ overflow: "scroll" }}>
                     <div className="recordMain">
                         <h2 style={{ letterSpacing: "1px", marginTop: "0.8rem" }}>{this.state.company}</h2>
@@ -1273,6 +1399,7 @@ export default class NewSurveyHistory extends React.Component {
                                                     onImageClick={(index, fs) => this.onTouchImg(index)}
                                                     selectable={this.state.files.length < 10}
                                                     accept="image/gif,image/jpeg,image/jpg,image/png"
+                                                    onAddImageClick={this.onClickUploadBtn}
                                                 />
                                             </div>
                                             <Modal
