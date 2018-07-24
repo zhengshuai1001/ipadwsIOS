@@ -5,6 +5,7 @@ import { Router, Route, hashHistory, IndexRoute } from 'react-router';
 // import App from './components/App';
 import Login from './components/Login';
 import GuidePage from './components/GuidePage';
+import GuidePage2 from './components/GuidePage2';
 import Customs from './components/Customs';
 import Survey from './components/Survey';
 import Visit from './components/Visit';
@@ -37,9 +38,9 @@ import './css/font/iconfont.css';
 ReactDOM.render(
     <Router history={hashHistory}>
         <Router path="/" component={BaseState}>
-            <IndexRoute component={GuidePage} />
+            <IndexRoute component={GuidePage2} />
             {/* <Route path="/" component={App}> */}
-                <Route path="/guide" component={GuidePage} />
+                <Route path="/guide" component={GuidePage2} />
             {/* </Route> */}
             <Route path="/mycustom" component={Mycustom}>
                 <IndexRoute component={Company} />
@@ -53,7 +54,7 @@ ReactDOM.render(
             </Route>
             <Route path="/meeting" component={Meeting} />
             <Route path="/quality" component={Quality} />
-            <Route path="/pdf" component={PdfView} />
+            {/* <Route path="/pdf" component={PdfView} /> */}
             <Route path="/meetingStatic" component={MeetingStatic} />
             <Route path="/survey" component={Survey} />            
             <Route path="/customs" component={Customs} />

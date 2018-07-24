@@ -641,11 +641,23 @@ export default class NewSurveyHistory extends React.Component {
             Toast.info('请先新增联系人', .8);
             return;
         }
-        let lastNewPersonLink = newPersonLink[length -1];
-        //测试最后一行的数据是否合法
-        if ( !this.testStatePersonLink(lastNewPersonLink)) {
+        // let lastNewPersonLink = newPersonLink[length -1];
+        // //测试最后一行的数据是否合法
+        // if ( !this.testStatePersonLink(lastNewPersonLink)) {
+        //     return;
+        // }
+
+        let eq = 0;
+        for (let i = 0; i < newPersonLink.length; i++) {
+            let testResult = this.testStatePersonLink(i);
+            if (!testResult)
+                break;
+            eq++;
+        }
+        if (eq < length) {
             return;
         }
+
         newPersonLink.map((value, index, elem)=>{
             elem[index].is_edit = false;
         })
@@ -660,7 +672,8 @@ export default class NewSurveyHistory extends React.Component {
      * @author ZhengGuoQing
      * @memberof NewSurveyHistory
      */
-    testStatePersonLink(personLink) {
+    testStatePersonLink(index) {
+        let personLink = this.state.personLink[index];
         let { name, mobile } = personLink;
         if (name == "") {
             Toast.info('请输入姓名', .8);
@@ -935,6 +948,42 @@ export default class NewSurveyHistory extends React.Component {
             ids,
             files,
         })
+    }
+    //0724 update 联系人添加操作按钮
+    modifyPlan2(index) {
+        if (!this.state.personLink[index]) {
+            return;
+        }
+        const personLink = update(this.state.personLink, { [index]: { is_edit: { $set: true } } });
+        this.setState({
+            personLink,
+            which: index
+        });
+    }
+    realDeletePlan2(index) {
+        if (!this.state.personLink[index]) {
+            return;
+        }
+        const personLink = update(this.state.personLink, { $splice: [[[index], 1]] });
+        this.setState({ personLink }, () => {
+            //删除不能向后端去保存，因为不知道数组内其他数据是否是合法的。
+            // this.addResearch();
+        });
+    }
+    deletePlan2(index) {
+        Modal.alert('删除', '确定删除该联系人吗?', [
+            { text: '取消', onPress: () => { }, style: 'default' },
+            { text: '确定', onPress: () => this.realDeletePlan2(index) },
+        ]);
+    }
+    saveOrderOne2(index) {
+        if (!this.testStatePersonLink(index)) {
+            return;
+        }
+        const personLink = update(this.state.personLink, { [index]: { is_edit: { $set: false } } });
+        this.setState({ personLink }, () => {
+            this.addResearch();
+        });
     }
     render() {
         return (
@@ -1268,12 +1317,20 @@ export default class NewSurveyHistory extends React.Component {
                                     <td colSpan="4">
                                         <table className="personalMsg">
                                             <tr style={{ borderBottom: "1px solid #ccc" }}>
-                                                <td style={{ width: "10%" }}>姓名</td>
+                                                {/* <td style={{ width: "10%" }}>姓名</td>
                                                 <td style={{ width: "15%" }}>职位</td>
                                                 <td style={{ width: "15%" }}>手机号</td>
                                                 <td style={{ width: "20%" }}>邮箱</td>
                                                 <td style={{ width: "25%" }}>备注</td>
-                                                <td style={{ width: "15%" }}>参与调研</td>
+                                                <td style={{ width: "15%" }}>参与调研</td> */}
+
+                                                <td style={{ width: "8%" }}>姓名</td>
+                                                <td style={{ width: "13%" }}>职位</td>
+                                                <td style={{ width: "15%" }}>手机号</td>
+                                                <td style={{ width: "18%" }}>邮箱</td>
+                                                <td style={{ width: "21%" }}>备注</td>
+                                                <td style={{ width: "10%" }}>参与调研</td>
+                                                <td style={{ width: "15%" }}>操作</td>
                                             </tr>
 
                                             {/* {
@@ -1298,6 +1355,28 @@ export default class NewSurveyHistory extends React.Component {
                                                             <td>{value.email}</td>
                                                             <td>{value.remark}</td>
                                                             <td>{value.is_in_survey == 1 ? "是" : "否"}</td>
+                                                            <td>
+                                                                <span
+                                                                    style={{
+                                                                        color: "#fff",
+                                                                        padding: "2px 6px",
+                                                                        background: "#108ee9",
+                                                                        borderRadius: "3px",
+                                                                        fontSize: "14px"
+                                                                    }}
+                                                                    onClick={this.modifyPlan2.bind(this, index)}
+                                                                >修改</span>&nbsp;/&nbsp;
+                                                            <span
+                                                                    onClick={this.deletePlan2.bind(this, index)}
+                                                                    style={{
+                                                                        color: "#fff",
+                                                                        padding: "2px 6px",
+                                                                        background: "red",
+                                                                        borderRadius: "3px",
+                                                                        fontSize: "14px"
+                                                                    }}
+                                                                >删除</span>
+                                                            </td>
                                                         </tr> :
                                                         <tr style={{ borderBottom: "1px solid #CBCBCB" }}>
                                                             <td> <input className="person-link-input" type="text" value={value.name} onChange={this.onChangePersonLink.bind(this, index,'name')} ></input></td>
@@ -1311,6 +1390,28 @@ export default class NewSurveyHistory extends React.Component {
                                                                 checked={value.is_in_survey == 1 ? true : false}
                                                                 onChange={(change) => { this.onChangePersonLink(index, 'is_in_survey', change) }}
                                                             />
+                                                            </td>
+                                                            <td>
+                                                                <span
+                                                                    style={{
+                                                                        color: "#fff",
+                                                                        padding: "2px 6px",
+                                                                        background: "#108ee9",
+                                                                        borderRadius: "3px",
+                                                                        fontSize: "14px"
+                                                                    }}
+                                                                    onClick={this.saveOrderOne2.bind(this, index)}
+                                                                >保存</span>&nbsp;/&nbsp;
+                                                                <span
+                                                                    style={{
+                                                                        color: "#fff",
+                                                                        padding: "2px 6px",
+                                                                        background: "red",
+                                                                        borderRadius: "3px",
+                                                                        fontSize: "14px"
+                                                                    }}
+                                                                    onClick={this.deletePlan2.bind(this, index)}
+                                                                >删除</span>
                                                             </td>
                                                         </tr>
                                                 })
@@ -1571,7 +1672,7 @@ export default class NewSurveyHistory extends React.Component {
                                                                 onClick={this.modifyPlan.bind(this, idx)}
                                                             >修改</span>&nbsp;/&nbsp;
                                                             <span 
-                                                                onClick={(e) => { this.delPlanLis(idx); }}
+                                                                onClick={this.deletePlan.bind(this, idx)}
                                                                 style={{
                                                                     color: "#fff",
                                                                     padding: "2px 6px",

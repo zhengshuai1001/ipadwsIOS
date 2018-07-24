@@ -49,6 +49,7 @@ const ajaxURLList = {
     get_survey_info: "gdApi/get_survey_info", //获取调研
     get_check_info: "gdApi/get_check_info", //获取验收详细
     get_user_list: "gdApi/get_user_list", //获取所有人员信息列表
+    get_ad: "hkw_newapi/get_ad", //获取广告图片
 }
 
 //定义一个基于Promise的异步任务执行器
