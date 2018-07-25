@@ -369,13 +369,17 @@ export const Quality2 = (props) => {
     let idx = props.visitLis.id;
     return (
         <li key={props.rowID} className="fullWidth" id={"visit?" + value.gd_company_id + "F"}>
-            <div className="top">
+            {/* {
+                value.company_path_thumb ? <div className="visit-company-logo update"><img className="logo-img" src={value.company_path_thumb}></img></div> : <i></i>
+            } */}
+            <div className="visit-company-logo update">{value.company_path_thumb ? <img className="logo-img" src={value.company_path_thumb}></img> : null }</div>
+            <div className="top update">
                 <ul className="fn-left">
-                    <li>
+                    {/* <li>
                         {
                             value.company_path_thumb ? <div className="visit-company-logo"><img className="logo-img" src={value.company_path_thumb}></img></div> : <i></i>
                         }
-                    </li>
+                    </li> */}
                     <li>{value.customer_name}</li>
                     <li style={{ color: "#ADADAD", margin: "0 5px" }}>{value.company_name}</li>
                     <li style={{ color: "#ADADAD" }}>{value.job_name}</li>
