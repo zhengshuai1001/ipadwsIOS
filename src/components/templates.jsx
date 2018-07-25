@@ -660,8 +660,7 @@ export const readyDo = (a, startScreenshot = () => { }, endScreenshot = () => { 
         //传递消息，开始截屏
         startScreenshot();
         html2canvas(dom, opts).then(function (canvas) {
-            //传递消息，结束截屏
-            endScreenshot();
+            
             var body = document.getElementsByTagName("body");
             body[0].appendChild(canvas);
             
@@ -674,6 +673,8 @@ export const readyDo = (a, startScreenshot = () => { }, endScreenshot = () => { 
                     album: true,
                     imgName: "ss.png",
                 }, function (ret, err) {
+                    //传递消息，结束截屏
+                    endScreenshot();
                     if (ret.status) {
                         newCanvas.remove();
                     } else {
@@ -681,6 +682,8 @@ export const readyDo = (a, startScreenshot = () => { }, endScreenshot = () => { 
                     }
                 });
             } else {
+                //传递消息，结束截屏
+                endScreenshot();
                 newCanvas.remove();
             }
             

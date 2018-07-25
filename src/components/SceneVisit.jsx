@@ -220,6 +220,7 @@ export default class SceneVisit extends React.Component {
         screenshotNoneDOMsArray.map((value, index) => {
             value.style.display = "none";
         })
+        Toast.loading('保存图片...', 5);
     }
     //结束截屏
     endScreenshot = () => {
@@ -233,6 +234,7 @@ export default class SceneVisit extends React.Component {
         screenshotNoneDOMsArray.map((value, index) => {
             value.style.display = "table-cell";
         })
+        Toast.hide()
     }
     routerWillLeave(nextLocation) {
         let head = document.getElementsByClassName("tableHead")[0];

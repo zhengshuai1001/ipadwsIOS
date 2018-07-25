@@ -267,6 +267,9 @@ export default class NewSurveyHistory extends React.Component {
         screenshotNoneDOMsArray.map((value, index) => {
             value.style.display = "none";
         })
+        //特殊，隐藏上传图片的增加按钮
+        document.querySelector(".am-image-picker-upload-btn").style.display = "none";
+        Toast.loading('保存图片...', 5);
     }
     //结束截屏
     endScreenshot = () => {
@@ -280,6 +283,9 @@ export default class NewSurveyHistory extends React.Component {
         screenshotNoneDOMsArray.map((value, index) => {
             value.style.display = "table-cell";
         })
+        //特殊，显示上传图片的增加按钮
+        document.querySelector(".am-image-picker-upload-btn").style.display = "block";
+        Toast.hide();
     }
     routerWillLeave(nextLocation) {
         // let mainWrap = document.getElementById("mainWrap");

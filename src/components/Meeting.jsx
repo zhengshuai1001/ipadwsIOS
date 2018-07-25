@@ -221,6 +221,7 @@ export default class Meeting extends React.Component {
         let finishTimeSpan = document.querySelector(".finish-time-span");
         finishTimeSpan.style.border = "none";
         finishTimeSpan.style.padding = "0";
+        Toast.loading('保存图片...', 5);
     }
     //结束截屏
     endScreenshot = () => {
@@ -238,6 +239,7 @@ export default class Meeting extends React.Component {
         let finishTimeSpan = document.querySelector(".finish-time-span");
         finishTimeSpan.style.border = "1px solid #bbb";
         finishTimeSpan.style.padding = "3px 10px";
+        Toast.hide()
     }
     routerWillLeave(nextLocation) {
         let head = document.getElementsByClassName("tableHead")[0];
