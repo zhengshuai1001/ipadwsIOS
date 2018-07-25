@@ -1,6 +1,6 @@
 import React from "react";
 import {Link,hashHistory} from "react-router"
-import { Toast } from 'antd-mobile';
+import { Toast, Carousel } from 'antd-mobile';
 const urls = {
     logo: require('../images/logo.png'),
     right: require('../images/right.png'),
@@ -17,7 +17,11 @@ export default class Guide extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            guideBg: sessionStorage.getItem("guideBg") ? sessionStorage.getItem("guideBg") : urls.guideBg,
+            // guideBg: sessionStorage.getItem("guideBg") ? sessionStorage.getItem("guideBg") : urls.guideBg,
+            guideBg: localStorage.getItem("guideBg") ? JSON.parse(localStorage.getItem("guideBg")) : [{ path: urls.guideBg}],
+            selectedBgUrl: localStorage.getItem("selectedBgUrl") || urls.guideBg,
+            CarouselDidMount: false, //轮播图是否渲染完成，默认是没有，此时要展示一张图
+            selectedIndex: localStorage.getItem("selectedIndex") || 0,
         }
         this.handleSceneVisitGet =(res)=> {
             validate.setCookie('user_id', "");
@@ -29,18 +33,32 @@ export default class Guide extends React.Component {
                 Toast.info(res.message, 2, null, false);
             }
         }
+        //第一种写法，三张图片随机
+        // this.handleGetAd = (res) => {
+        //     if (res.success) {
+        //         if (res.data.length > 0) {
+        //             let guideBg = '';
+        //             let index = Math.floor(Math.random() * 3)
+        //             guideBg = res.data[index].path;
+        //             if (guideBg) {
+        //                 this.setState({
+        //                     guideBg,
+        //                 });
+        //                 sessionStorage.setItem("guideBg", guideBg);
+        //             }
+        //         }
+        //     } else {
+        //         Toast.info(res.message, .8, null, false);
+        //     }
+        // }
+        //第二种写法，轮播图
         this.handleGetAd = (res) => {
             if (res.success) {
                 if (res.data.length > 0) {
-                    let guideBg = '';
-                    let index = Math.floor(Math.random() * 3)
-                    guideBg = res.data[index].path;
-                    if (guideBg) {
-                        this.setState({
-                            guideBg,
-                        });
-                        sessionStorage.setItem("guideBg", guideBg);
-                    }
+                    this.setState({
+                        guideBg: res.data,
+                    });
+                    localStorage.setItem("guideBg", JSON.stringify(res.data));
                 }
             } else {
                 Toast.info(res.message, .8, null, false);
@@ -49,7 +67,7 @@ export default class Guide extends React.Component {
         // this.pdfReader = api.require('pdfReader')        
     }
     componentDidMount(){
-        if (!sessionStorage.getItem("guideBg")) {
+        if (!localStorage.getItem("guideBg")) {
             this.ajaxGetAd();
         }
     }
@@ -92,6 +110,23 @@ export default class Guide extends React.Component {
             index: 9,
         }, this.handleGetAd, false, "get");
     }
+    CarouselAfterChange(index) {
+        let guideBg = this.state.guideBg[index];
+        if (guideBg && guideBg.path) {
+            localStorage.setItem("selectedBgUrl", guideBg.path);
+            localStorage.setItem("selectedIndex", index);
+            // this.setState({ selectedIndex: index});
+        }
+    }
+    onLoadGuidBg() {
+        let token = setTimeout(() => {
+            this.setState({
+                CarouselDidMount: true,
+                selectedIndex: localStorage.getItem("selectedIndex")
+            })
+            clearTimeout(token)
+        }, 1000);
+    }
     render() {
         return (
             // <div className="guideWrap" style={{ background:"url("+urls.guideBg+") no-repeat center center / 100% 100%"}}>
@@ -99,12 +134,34 @@ export default class Guide extends React.Component {
                 {/* <div className="head">
                     <img src={urls.logo} />
                 </div> */}
-                <div style={{position:"absolute",width:"100%",height:"100%"}}>
-                    <img src={this.state.guideBg} style={{width:"100%"}} />
+                <div className="guid-bg-box">
+                    <img className="guid-bg-img" src={this.state.selectedBgUrl} onLoad={this.onLoadGuidBg.bind(this)} />
                 </div>
+                {
+                    this.state.CarouselDidMount ? 
+                    <Carousel
+                        selectedIndex={this.state.selectedIndex}
+                        autoplay={true}
+                        infinite
+                        dots={false}
+                        autoplayInterval={3000}
+                        afterChange={this.CarouselAfterChange.bind(this)}
+                    >
+                        {this.state.guideBg.map(val => (
+                            <img
+                                src={val.path}
+                                style={{ width: '100%', height: this.state.imgHeight }}
+                                onLoad={() => {
+                                    window.dispatchEvent(new Event('resize'));
+                                    this.setState({ imgHeight: 'auto' });
+                                }}
+                            />
+                        ))}
+                    </Carousel> : null
+                }
                 {/* <a><img className="midCenter" src={urls.play} onClick={()=>{this.beforeLogin('customs','0')}}/></a> */}
                 <div className="main">
-                    <h2><span>同心</span>共进&nbsp;&nbsp;<span>感恩</span>汇聚</h2>
+                    {/* <h2><span>同心</span>共进&nbsp;&nbsp;<span>感恩</span>汇聚</h2> */}
                     <ul className="guideList">
                         <li>
                             <a onClick={()=>{this.beforeLogin('newSurveyHistory','5')}}>

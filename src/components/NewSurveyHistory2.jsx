@@ -162,7 +162,7 @@ export default class NewSurveyHistory extends React.Component {
         this.handleProjectGet = (res) => {
             if (res.success) {
                 //将获取的数据放到state里咯
-                let { company_info, user_list, linkers, plan_list, appendixs, content, score, suggestion } = res.data;
+                let { company_info, user_list, linkers, plan_list, appendixs, content, score, suggestion, id } = res.data;
                 let { company_name, start_time: company_start_time, address: company_address, url: company_url, referee_name: company_referee_name } = company_info;
                 // this.setState({
                 //     "gd_company_id": this.state.baseId, //公司id
@@ -209,6 +209,7 @@ export default class NewSurveyHistory extends React.Component {
                     score: score,
                     impress: impress,
                     suggest: suggestion,
+                    id,
                 })
                 // console.log(res);
                 //初始化写入图片
@@ -237,7 +238,7 @@ export default class NewSurveyHistory extends React.Component {
         )
         init('allBox');
         init('suggest');
-        readyDo(this.alerts);
+        readyDo(this.alerts, this.startScreenshot, this.endScreenshot);
         canvas = document.getElementById("canvas");
         drawBoard = new DrawBoard(canvas);  // 初始化
         // let head = document.getElementsByClassName("tableHead")[0];
@@ -253,6 +254,32 @@ export default class NewSurveyHistory extends React.Component {
 
         //定位上传图片的按钮位置
         this.positionUploadBtn();
+    }
+    //开始截屏
+    startScreenshot = () => {
+        let screenshotHideDOMs = document.querySelectorAll(".screenshot-hide");
+        let screenshotNoneDOMs = document.querySelectorAll(".screenshot-none");
+        let screenshotHideDOMsArray = Array.prototype.slice.call(screenshotHideDOMs);
+        let screenshotNoneDOMsArray = Array.prototype.slice.call(screenshotNoneDOMs);
+        screenshotHideDOMsArray.map((value, index)=>{
+            value.style.visibility = "hidden";
+        })
+        screenshotNoneDOMsArray.map((value, index) => {
+            value.style.display = "none";
+        })
+    }
+    //结束截屏
+    endScreenshot = () => {
+        let screenshotHideDOMs = document.querySelectorAll(".screenshot-hide");
+        let screenshotNoneDOMs = document.querySelectorAll(".screenshot-none");
+        let screenshotHideDOMsArray = Array.prototype.slice.call(screenshotHideDOMs);
+        let screenshotNoneDOMsArray = Array.prototype.slice.call(screenshotNoneDOMs);
+        screenshotHideDOMsArray.map((value, index) => {
+            value.style.visibility = "inherit";
+        })
+        screenshotNoneDOMsArray.map((value, index) => {
+            value.style.display = "table-cell";
+        })
     }
     routerWillLeave(nextLocation) {
         // let mainWrap = document.getElementById("mainWrap");
@@ -998,22 +1025,22 @@ export default class NewSurveyHistory extends React.Component {
                     </h3>}
                 ></TableHeadServey>
                 {/* <div className="delAnimate animatePageY"> */}
-                <div id="downloadPng" onClick={() => {
+                <div className="screenshot-hide" id="downloadPng" onClick={() => {
                     // this.loadingToast();
                     this.addResearch(1);
                     // for (let i = 0; i < interval.length; i++) {
                     //     clearInterval(interval[i]);
                     // }
                 }}>保存并发送</div>
-                <div id="downloadPng2" onClick={() => {
+                <div className="screenshot-hide" id="downloadPng2" onClick={() => {
                     this.addResearch();
                 }}>保存为草稿</div>
-                <div 
+                {/* <div 
                     className="choose-upload-file-btn"
                     onTouchStart={this.touchStartUploadBtn}
                     onTouchEnd={this.touchEndUploadBtn}
                     onClick={this.onClickUploadBtn}
-                ></div>
+                ></div> */}
                 <ActivityIndicator
                     toast
                     text="上传图片中..."
@@ -1035,7 +1062,7 @@ export default class NewSurveyHistory extends React.Component {
                         <div className="tableDetails">
                             <table className="topTable">
                                 <tr>
-                                    <td colSpan="4" className="darkbg">客户信息<span className="add-person-btn" onClick={this.handleDetailsGet}>保存</span></td>
+                                    <td colSpan="4" className="darkbg">客户信息<span className="add-person-btn screenshot-hide" onClick={this.handleDetailsGet}>保存</span></td>
                                 </tr>
                                 <tr>
                                     <th className="darkbg">公司名称</th>
@@ -1168,7 +1195,7 @@ export default class NewSurveyHistory extends React.Component {
                                     <td colSpan="4"
                                         className="darkbg newPersonalMsg"
                                     // >联系人<span onClick={this.showModal('modal1')}>新增 <i className="iconfont icon-jia"></i></span></td>
-                                    >联系人<span className="add-person-btn" onClick={this.savePerson}>保存</span><span className="add-person-span" onClick={this.addPersonalLink}>新增 <i className="iconfont icon-jia"></i></span></td>
+                                    >联系人<span className="add-person-btn screenshot-hide" onClick={this.savePerson}>保存</span><span className="add-person-span screenshot-hide" onClick={this.addPersonalLink}>新增 <i className="iconfont icon-jia"></i></span></td>
                                 </tr>
                                 <Modal
                                     visible={this.state.modal1}
@@ -1330,7 +1357,7 @@ export default class NewSurveyHistory extends React.Component {
                                                 <td style={{ width: "18%" }}>邮箱</td>
                                                 <td style={{ width: "21%" }}>备注</td>
                                                 <td style={{ width: "10%" }}>参与调研</td>
-                                                <td style={{ width: "15%" }}>操作</td>
+                                                <td style={{ width: "15%" }} className="screenshot-none">操作</td>
                                             </tr>
 
                                             {/* {
@@ -1355,7 +1382,7 @@ export default class NewSurveyHistory extends React.Component {
                                                             <td>{value.email}</td>
                                                             <td>{value.remark}</td>
                                                             <td>{value.is_in_survey == 1 ? "是" : "否"}</td>
-                                                            <td>
+                                                            <td className="screenshot-none">
                                                                 <span
                                                                     style={{
                                                                         color: "#fff",
@@ -1391,7 +1418,7 @@ export default class NewSurveyHistory extends React.Component {
                                                                 onChange={(change) => { this.onChangePersonLink(index, 'is_in_survey', change) }}
                                                             />
                                                             </td>
-                                                            <td>
+                                                            <td className="screenshot-none">
                                                                 <span
                                                                     style={{
                                                                         color: "#fff",
@@ -1421,12 +1448,12 @@ export default class NewSurveyHistory extends React.Component {
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style={{ position: "relative" }} colSpan="4" className="darkbg">调研记录<span className="add-person-btn" onClick={this.handleDetailsGet}>保存</span></td>
+                                    <td style={{ position: "relative" }} colSpan="4" className="darkbg">调研记录<span className="add-person-btn screenshot-hide" onClick={this.handleDetailsGet}>保存</span></td>
                                 </tr>
                                 <tr style={{ position: "relative" }}>
                                     <td colSpan="4">
                                         <div
-                                            className="iconfont icon-iconfontquestion"
+                                            className="iconfont icon-iconfontquestion screenshot-hide"
                                             style={{
                                                 padding: "10px",
                                                 fontSize: "22px",
@@ -1558,9 +1585,9 @@ export default class NewSurveyHistory extends React.Component {
                                     </td> */}
                                     <td colSpan="4" className="darkbg newPersonalMsg">
                                         下一步计划和行动
-                                        <span className="add-person-btn" onClick={this.saveOrderList}>保存</span>
+                                        <span className="add-person-btn screenshot-hide" onClick={this.saveOrderList}>保存</span>
                                         <span
-                                            className="add-person-span"
+                                            className="add-person-span screenshot-hide"
                                             onClick={this.addOrderMsg2}
                                         >新增 <i className="iconfont icon-jia"></i></span>
                                     </td>
@@ -1647,7 +1674,7 @@ export default class NewSurveyHistory extends React.Component {
                                                 <td style={{ borderTop: "0 none" }}>事项</td>
                                                 <td style={{ borderTop: "0 none" }}>责任人</td>
                                                 <td style={{ borderTop: "0 none" }}>完成时间</td>
-                                                <td style={{ borderTop: "0 none", borderRight: "0 none" }}>操作</td>
+                                                <td style={{ borderTop: "0 none", borderRight: "0 none" }} className="screenshot-none">操作</td>
                                             </tr>
                                             {
                                                 this.state.orderList.map((value, idx) => {
@@ -1659,7 +1686,7 @@ export default class NewSurveyHistory extends React.Component {
                                                         </td>
                                                         <td>{value.name}</td>
                                                         <td>{value.exp_time}</td>
-                                                        <td>
+                                                        <td className="screenshot-none">
                                                             <span 
                                                                 // onClick={(e) => { this.showModal('modal2')(e, 1, idx); this.setState({ which: idx, }) }}
                                                                 style={{
@@ -1742,7 +1769,7 @@ export default class NewSurveyHistory extends React.Component {
                                                                     <span className="finish-time-span">{value.exp_time ? value.exp_time : "点击选择时间" }</span>
                                                                 </DatePicker>
                                                             </td>
-                                                            <td>
+                                                            <td className="screenshot-none">
                                                                 <span 
                                                                     // onClick={(e) => { this.showModal('modal2')(e, 1, idx); this.setState({ which: idx, }) }}
                                                                     style={{
@@ -1837,7 +1864,7 @@ export default class NewSurveyHistory extends React.Component {
                                                 <span style={{ backgroundColor: "#fff" }}>项目负责人(签字): </span>
                                             </div>
                                             <div className="dataType">
-                                                <div className="bt-warn fn-right" style={{ position: "relative", zIndex: "1000" }}>
+                                                <div className="bt-warn fn-right screenshot-hide" style={{ position: "relative", zIndex: "1000" }}>
                                                     <button type="button" onClick={this.clearAll}>重签</button>
                                                     {/* <button type="button" onClick={(e)=>{this.save(e)}}>重签</button> */}
                                                 </div>

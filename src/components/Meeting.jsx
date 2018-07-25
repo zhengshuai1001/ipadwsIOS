@@ -89,7 +89,7 @@ export default class Meeting extends React.Component {
             }
         },
         this.saveProject = (res) => {
-            console.log(res);
+            // console.log(res);
             if(res.success) {
                 Toast.info("文件保存成功", 2, null, false);
                 setTimeout(() => {
@@ -104,7 +104,7 @@ export default class Meeting extends React.Component {
         }
         this.handleGetMeetingInfo = (res) => {
             if (res.success) {
-                console.log(res)
+                // console.log(res)
                 let { id, start_time, address, user_list, title, content, plan_list, master_name, master_id, recorder_name, recorder_id } = res.data;
 
                 let meetingPersonal = [];
@@ -182,7 +182,7 @@ export default class Meeting extends React.Component {
             this.props.route,
             this.routerWillLeave
         )
-        readyDo(this.alerts);
+        readyDo(this.alerts, this.startScreenshot, this.endScreenshot);
         init("meetingResult");
         canvas = document.getElementById("canvas");
         drawBoard = new DrawBoard(canvas);  // 初始化
@@ -204,6 +204,40 @@ export default class Meeting extends React.Component {
 
         //先获取10个人员信息列表
         this.ajaxGetUserList();
+    }
+    //开始截屏
+    startScreenshot = () => {
+        let screenshotHideDOMs = document.querySelectorAll(".screenshot-hide");
+        let screenshotNoneDOMs = document.querySelectorAll(".screenshot-none");
+        let screenshotHideDOMsArray = Array.prototype.slice.call(screenshotHideDOMs);
+        let screenshotNoneDOMsArray = Array.prototype.slice.call(screenshotNoneDOMs);
+        screenshotHideDOMsArray.map((value, index) => {
+            value.style.visibility = "hidden";
+        })
+        screenshotNoneDOMsArray.map((value, index) => {
+            value.style.display = "none";
+        })
+        //特殊情况，会议日期的边框得隐藏
+        let finishTimeSpan = document.querySelector(".finish-time-span");
+        finishTimeSpan.style.border = "none";
+        finishTimeSpan.style.padding = "0";
+    }
+    //结束截屏
+    endScreenshot = () => {
+        let screenshotHideDOMs = document.querySelectorAll(".screenshot-hide");
+        let screenshotNoneDOMs = document.querySelectorAll(".screenshot-none");
+        let screenshotHideDOMsArray = Array.prototype.slice.call(screenshotHideDOMs);
+        let screenshotNoneDOMsArray = Array.prototype.slice.call(screenshotNoneDOMs);
+        screenshotHideDOMsArray.map((value, index) => {
+            value.style.visibility = "inherit";
+        })
+        screenshotNoneDOMsArray.map((value, index) => {
+            value.style.display = "table-cell";
+        })
+        //特殊情况，会议日期的边框得隐藏
+        let finishTimeSpan = document.querySelector(".finish-time-span");
+        finishTimeSpan.style.border = "1px solid #bbb";
+        finishTimeSpan.style.padding = "3px 10px";
     }
     routerWillLeave(nextLocation) {
         let head = document.getElementsByClassName("tableHead")[0];
@@ -657,7 +691,7 @@ export default class Meeting extends React.Component {
             // <div className="visitRecordWrap" id="fromHTMLtestdiv" onTouchMove={() => { this.touchBlur(); }}>
             <div className="visitRecordWrap" id="fromHTMLtestdiv">
                 <TableHeads url={urls.wordMsg} isHide={true}></TableHeads>
-                <button id="downloadPng" onClick={() => {
+                <button className="screenshot-hide" id="downloadPng" onClick={() => {
                     // this.loadingToast();
                     this.addMeeting();
                     // for (let i = 0; i < interval.length; i++) {
@@ -665,10 +699,10 @@ export default class Meeting extends React.Component {
                     // }
                 }}
                 >下载图片</button>
-                <div id="downloadPng3" onClick={() => {
+                <div className="screenshot-hide" id="downloadPng3" onClick={() => {
                     this.addResearch(1);
                 }}>保存并发送</div>
-                <div id="downloadPng4" onClick={() => {
+                <div className="screenshot-hide" id="downloadPng4" onClick={() => {
                     this.addResearch();
                 }}>保存为草稿</div>
                 <div className="recordMain">
@@ -714,7 +748,7 @@ export default class Meeting extends React.Component {
                                     /> */}
                                     {this.state.meetingAdminTxt}
                                     <i 
-                                        className="iconfont icon-jia add-more-btn-meet"
+                                        className="iconfont icon-jia add-more-btn-meet screenshot-hide"
                                         // onClick={(e) => {
                                         //     this.state.toPersonalList.length > 0 ? this.showModal('modal4')(e) : Toast.info('暂无联系人', .8);
                                         // }}
@@ -729,7 +763,7 @@ export default class Meeting extends React.Component {
                                     /> */}
                                     {this.state.meetingWriteTxt}
                                     <i
-                                        className="iconfont icon-jia add-more-btn-meet"
+                                        className="iconfont icon-jia add-more-btn-meet screenshot-hide"
                                         onClick={this.onClickUserList.bind(this, "meetingWrite")}
                                     ></i>
                                 </td>
@@ -745,7 +779,7 @@ export default class Meeting extends React.Component {
                                     /> */}
                                     {this.state.meetingPersonalTxt}
                                     <i
-                                        className="iconfont icon-jia add-more-btn-meet"
+                                        className="iconfont icon-jia add-more-btn-meet screenshot-hide"
                                         onClick={this.onClickUserList.bind(this, "meetingPersonal")}
                                     ></i>
                                 </td>
@@ -784,9 +818,9 @@ export default class Meeting extends React.Component {
                                 </td> */}
                                 <td colSpan="4" className="darkbg newPersonalMsg">
                                     下一步计划和行动
-                                        <span className="add-person-btn" onClick={this.saveOrderList}>保存</span>
+                                        <span className="add-person-btn screenshot-hide" onClick={this.saveOrderList}>保存</span>
                                     <span
-                                        className="add-person-span"
+                                        className="add-person-span screenshot-hide"
                                         onClick={this.addOrderMsg2}
                                     >新增 <i className="iconfont icon-jia"></i></span>
                                 </td>
@@ -927,7 +961,7 @@ export default class Meeting extends React.Component {
                                             <span style={{ backgroundColor: "#fff" }}>项目负责人(签字): </span>
                                         </div>
                                         <div className="dataType">
-                                            <div className="bt-warn fn-right" style={{ position: "relative", zIndex: "1000" }}>
+                                            <div className="bt-warn fn-right screenshot-hide" style={{ position: "relative", zIndex: "1000" }}>
                                                 <button type="button" onClick={this.clearAll}>重签</button>
                                                 {/* <button type="button" onClick={this.save}>确认</button> */}
                                             </div>

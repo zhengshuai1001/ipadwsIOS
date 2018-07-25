@@ -9,8 +9,10 @@ class DrawBoard {
         // this.context.scale(2,2);
         this.lastX = 0;   //画笔上次停留坐标x轴值
         this.lastY = 0;   //画笔上次停留坐标y轴值
-        this.lineWidthMax = 0, //画笔最大粗细
-        this.lineWidthMin = 1, //画笔最小粗细
+        // this.lineWidthMax = 0, //画笔最大粗细
+        // this.lineWidthMin = 1, //画笔最小粗细
+        this.lineWidthMax = 4, //画笔最大粗细
+        this.lineWidthMin = 2, //画笔最小粗细
         this.lastTime = 0;  //画笔上次时间
         this.lastLineWidth = 0;   //画笔最近宽度
 
@@ -24,7 +26,8 @@ class DrawBoard {
     init() {
         this.context.lineCap = 'round';             //平滑处理
         this.context.lineJoin = 'round';            //平滑处理
-        this.lineWidthMax = 1.5;   //画笔最粗值
+        // this.lineWidthMax = 1.5;   //画笔最粗值
+        this.lineWidthMax = 4;   //画笔最粗值
         //设置落笔的最近线条宽度 lastWidth
         this.lastLineWidth = this.lineWidthMax / 2;
     }

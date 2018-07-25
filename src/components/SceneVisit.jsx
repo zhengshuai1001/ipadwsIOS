@@ -115,11 +115,11 @@ export default class SceneVisit extends React.Component {
             }
         },
         this.toPersonalList = (res) =>{
-            console.log(res)
+            // console.log(res)
             this.setState({toPersonalList:res.data})
         },
         this.getPersonalList = (res) =>{
-            console.log(res)
+            // console.log(res)
             this.setState({getPersonalList:res.data})
         }
         this.handleGetRecordInfo = (res) => {
@@ -187,7 +187,7 @@ export default class SceneVisit extends React.Component {
         )
         init("sceneResult");
         init("sceneNext");
-        readyDo(this.alerts);
+        readyDo(this.alerts, this.startScreenshot, this.endScreenshot);
         canvas = document.getElementById("canvas");
         drawBoard = new DrawBoard(canvas);  // 初始化
         let blurList = document.querySelectorAll("input");
@@ -207,6 +207,32 @@ export default class SceneVisit extends React.Component {
 
         //判断URL有没有参数ID，需不需要获取回放记录
         this.ajaxGetRecordInfo();
+    }
+    //开始截屏
+    startScreenshot = () => {
+        let screenshotHideDOMs = document.querySelectorAll(".screenshot-hide");
+        let screenshotNoneDOMs = document.querySelectorAll(".screenshot-none");
+        let screenshotHideDOMsArray = Array.prototype.slice.call(screenshotHideDOMs);
+        let screenshotNoneDOMsArray = Array.prototype.slice.call(screenshotNoneDOMs);
+        screenshotHideDOMsArray.map((value, index) => {
+            value.style.visibility = "hidden";
+        })
+        screenshotNoneDOMsArray.map((value, index) => {
+            value.style.display = "none";
+        })
+    }
+    //结束截屏
+    endScreenshot = () => {
+        let screenshotHideDOMs = document.querySelectorAll(".screenshot-hide");
+        let screenshotNoneDOMs = document.querySelectorAll(".screenshot-none");
+        let screenshotHideDOMsArray = Array.prototype.slice.call(screenshotHideDOMs);
+        let screenshotNoneDOMsArray = Array.prototype.slice.call(screenshotNoneDOMs);
+        screenshotHideDOMsArray.map((value, index) => {
+            value.style.visibility = "inherit";
+        })
+        screenshotNoneDOMsArray.map((value, index) => {
+            value.style.display = "table-cell";
+        })
     }
     routerWillLeave(nextLocation) {
         let head = document.getElementsByClassName("tableHead")[0];
@@ -324,7 +350,7 @@ export default class SceneVisit extends React.Component {
         })
     }
     isCheck1 = (num, idx) => {
-        console.log(num, idx)
+        // console.log(num, idx)
         let arr = [false, false, false];
         if (idx) {
             arr[idx] = !arr[idx];
@@ -625,17 +651,17 @@ export default class SceneVisit extends React.Component {
                     url={urls.wordMsg}
                     isHide={true}
                 ></TableHeads>
-                <button id="downloadPng" onClick={() => {
+                <button className="screenshot-hide" id="downloadPng" onClick={() => {
                     // this.loadingToast();
                     this.addRecordToback();
                     // for (let i = 0; i < interval.length; i++) {
                     //     clearInterval(interval[i]);
                     // }
                 }}>下载图片</button>     
-                <div id="downloadPng3" onClick={() => {
+                <div className="screenshot-hide" id="downloadPng3" onClick={() => {
                     this.addResearch(1);
                 }}>保存并发送</div>
-                <div id="downloadPng4" onClick={() => {
+                <div className="screenshot-hide" id="downloadPng4" onClick={() => {
                     this.addResearch();
                 }}>保存为草稿</div>
                 <div className="recordMain">
@@ -674,7 +700,7 @@ export default class SceneVisit extends React.Component {
                                     <i onClick={(e)=>{
                                         this.state.toPersonalList.length>0?this.showModal('modal4')(e):Toast.info('暂无联系人', .8);
                                     }}
-                                        className="iconfont icon-jia" 
+                                        className="iconfont icon-jia screenshot-hide" 
                                         style={{
                                             float: "right", 
                                             fontSize: "28px", 
@@ -694,7 +720,7 @@ export default class SceneVisit extends React.Component {
                                 <td>
                                     {this.state.name02}
                                     <i onClick={this.showModal('modal3')}
-                                            className="iconfont icon-jia" 
+                                        className="iconfont icon-jia screenshot-hide" 
                                             style={{
                                                 float: "right", 
                                                 fontSize: "28px", 
@@ -812,9 +838,9 @@ export default class SceneVisit extends React.Component {
                                 </td> */}
                                 <td colSpan="4" className="darkbg newPersonalMsg">
                                     下一步计划和行动
-                                        <span className="add-person-btn" onClick={this.saveOrderList}>保存</span>
+                                        <span className="add-person-btn screenshot-hide" onClick={this.saveOrderList}>保存</span>
                                     <span
-                                        className="add-person-span"
+                                        className="add-person-span screenshot-hide"
                                         onClick={this.addOrderMsg2}
                                     >新增 <i className="iconfont icon-jia"></i></span>
                                 </td>
@@ -955,7 +981,7 @@ export default class SceneVisit extends React.Component {
                                     colSpan="4"
                                     className="darkbg"
                                 >
-                                    满意度调查 <span style={{ float: "right", fontWeight: 500, marginRight: "0.3rem" }}>
+                                    满意度调查 <span className="screenshot-hide" style={{ float: "right", fontWeight: 500, marginRight: "0.3rem" }}>
                                         <input type="checkbox" id="allAgree" checked={this.state.allChecked} onChange={() => { this.toggleAgree() }} onClick={() => { this.changeCheck() }} />&nbsp;
                                         <label htmlFor="allAgree">全满意</label>
                                     </span>
@@ -1036,7 +1062,7 @@ export default class SceneVisit extends React.Component {
                                             <span style={{ backgroundColor: "#fff" }}>顾客/客户(签字): </span>
                                         </div>
                                         <div className="dataType">
-                                            <div className="bt-warn fn-right" style={{ position: "relative", zIndex: "1000" }}>
+                                            <div className="bt-warn fn-right screenshot-hide" style={{ position: "relative", zIndex: "1000" }}>
                                                 <button type="button" onClick={this.clearAll}>重签</button>
                                             </div>
                                             <div className="date" >

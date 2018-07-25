@@ -13,12 +13,12 @@ export const TableHead = (props) => (
     </div>
 )
 export const TableHeads = (props) => (    //公共头部  
-    <div className="tableHead" style={{ paddingTop: '20px',position:"fixed",width:"100%",top:"0",left:"0"}}>
+    <div className="tableHead screenshot-hide" style={{ paddingTop: '20px',position:"fixed",width:"100%",top:"0",left:"0"}}>
         <div className="leftLogoWord fn-left" onClick={() => {
-            hashHistory.push({
-                pathname: '/customs'
-            })
-            // hashHistory.goBack()
+            // hashHistory.push({
+            //     pathname: '/customs'
+            // })
+            hashHistory.goBack()
             }}><i className="iconfont icon-jiantou"></i>返回</div>
         {
             props.isHide ? "" : props.tag
@@ -36,7 +36,7 @@ export const TableHeadOne = (props) => (    //公共头部
     </div>
 )
 export const TableHeadServey = (props) => (    //公共头部  
-    <div className="tableHead" style={{ paddingTop: '20px',position:"static",width:"100%",top:"0",left:"0"}}>
+    <div className="tableHead screenshot-hide" style={{ paddingTop: '20px',position:"static",width:"100%",top:"0",left:"0"}}>
         <div className="leftLogoWord fn-left" onClick={() => {
             hashHistory.push({
                 pathname: '/guide'
@@ -598,7 +598,7 @@ function download(src) {
     $a.dispatchEvent(evObj);
 };
 
-export const readyDo = (a) => {
+export const readyDo = (a, startScreenshot = () => { }, endScreenshot = () => { }) => {
     // var base64text = document.getElementById("base64text");
     // var filename = document.getElementById("filename");
     // var filename={};
@@ -657,24 +657,32 @@ export const readyDo = (a) => {
             width: width, //dom 原始宽度
             height: height //dom 原始高度
         };
+        //传递消息，开始截屏
+        startScreenshot();
         html2canvas(dom, opts).then(function (canvas) {
+            //传递消息，结束截屏
+            endScreenshot();
             var body = document.getElementsByTagName("body");
             body[0].appendChild(canvas);
             
             var base64text = canvas.toDataURL(type);
-            var trans = api.require('trans');
-            trans.saveImage({
-                base64Str: base64text.split(',')[1],
-                imgPath: "fs://",
-                album: true,
-                imgName: "ss.png",
-            }, function (ret, err) {
-                if (ret.status) {
-                    newCanvas.remove();
-                } else {
-                    alert(JSON.stringify(err));
-                }
-            });
+            if (window.api) {
+                var trans = window.api.require('trans');
+                trans.saveImage({
+                    base64Str: base64text.split(',')[1],
+                    imgPath: "fs://",
+                    album: true,
+                    imgName: "ss.png",
+                }, function (ret, err) {
+                    if (ret.status) {
+                        newCanvas.remove();
+                    } else {
+                        alert(JSON.stringify(err));
+                    }
+                });
+            } else {
+                newCanvas.remove();
+            }
             
             runPromise('upload_image_byw_upy2', {
                 "arr": base64text
@@ -889,7 +897,7 @@ export const NextStepAndAction = ({ orderList, modifyPlan, deletePlan, saveOrder
                     <td style={{ borderTop: "0 none" }}>事项</td>
                     <td style={{ borderTop: "0 none" }}>责任人</td>
                     <td style={{ borderTop: "0 none" }}>完成时间</td>
-                    <td style={{ borderTop: "0 none", borderRight: "0 none" }}>操作</td>
+                    <td style={{ borderTop: "0 none", borderRight: "0 none" }} className="screenshot-none">操作</td>
                 </tr>
                 {
                     orderList.map((value, idx) => {
@@ -900,7 +908,7 @@ export const NextStepAndAction = ({ orderList, modifyPlan, deletePlan, saveOrder
                             </td>
                             <td>{value.name}</td>
                             <td>{value.exp_time}</td>
-                            <td>
+                            <td className="screenshot-none">
                                 <span
                                     style={{
                                         color: "#fff",
@@ -963,7 +971,7 @@ export const NextStepAndAction = ({ orderList, modifyPlan, deletePlan, saveOrder
                                         <span className="finish-time-span">{value.exp_time ? value.exp_time : "点击选择时间"}</span>
                                     </DatePicker>
                                 </td>
-                                <td>
+                                <td className="screenshot-none">
                                     <span
                                         style={{
                                             color: "#fff",

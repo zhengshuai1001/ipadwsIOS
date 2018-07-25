@@ -20,6 +20,7 @@ import VisitLists from './components/VisitLists';
 import Company from './components/Company';
 import SurveyHistory from './components/SurveyHistory';
 import Mycustom from './components/Mycustom';
+import Mycustom2 from './components/Mycustom2';
 import NewSurveyHistory from './components/NewSurveyHistory';
 import NewSurveyHistory2 from './components/NewSurveyHistory2';
 import MeetingList from './components/MeetingList';
@@ -42,7 +43,7 @@ ReactDOM.render(
             {/* <Route path="/" component={App}> */}
                 <Route path="/guide" component={GuidePage2} />
             {/* </Route> */}
-            <Route path="/mycustom" component={Mycustom}>
+            <Route path="/mycustom" component={Mycustom2}>
                 <IndexRoute component={Company} />
                 <Route path="/company" component={Company} />  
                 <Route path="/visitRecord" component={VisitRecord} />
