@@ -105,6 +105,7 @@ export default class Visit extends React.Component {
         this.handleAddVisit = (res) =>{
             if(res.success){
                 Toast.info("提交成功", 2, null, false);
+                // this.orderVisitBack(this.state.classify, pageIndex * NUM_ROWS, this.state.gd_company_id); //没有测试效果，先注释掉
                 this.setState({
                     alertShow:false
                 })
